@@ -1873,3 +1873,61 @@ body.dark-mode .sidebar-header,
 body.dark-mode .sidebar-footer {
   border-color: rgba(255, 255, 255, 0.1);
 }
+/* --- CUSTOM SCROLLBAR (THANH CUỘN ĐẸP) --- */
+
+/* 1. Kích thước thanh cuộn */
+::-webkit-scrollbar {
+  width: 8px; /* Mỏng vừa phải */
+  height: 8px; /* Cho thanh ngang nếu có */
+}
+
+/* 2. Nền thanh cuộn (Track) - Trong suốt để hợp với Glassmorphism */
+::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 10px;
+}
+
+/* 3. Tay cầm (Thumb) - Light Mode */
+::-webkit-scrollbar-thumb {
+  background: rgba(167, 119, 227, 0.5); /* Tím nhạt */
+  border-radius: 10px;
+  backdrop-filter: blur(5px);
+}
+
+/* Hiệu ứng khi di chuột vào thanh cuộn */
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(167, 119, 227, 0.8);
+}
+
+/* --- DARK MODE SCROLLBAR (NEON STYLE) --- */
+body.dark-mode ::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.05); /* Nền tối mờ */
+}
+
+body.dark-mode ::-webkit-scrollbar-thumb {
+  background: rgba(110, 142, 251, 0.6); /* Xanh neon mờ */
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+body.dark-mode ::-webkit-scrollbar-thumb:hover {
+  background: #6e8efb; /* Sáng rực khi hover */
+  box-shadow: 0 0 10px rgba(110, 142, 251, 0.5); /* Hiệu ứng phát sáng */
+}
+
+/* --- KÍCH HOẠT CUỘN CHO CÁC KHU VỰC CẦN THIẾT --- */
+
+/* 1. Cho phép Body cuộn (Sửa lỗi bị cắt nội dung trên Desktop nhỏ) */
+body {
+  overflow-y: overlay; /* 'overlay' giúp thanh cuộn nằm đè lên nội dung, không chiếm diện tích */
+  overflow-x: hidden; /* Vẫn chặn cuộn ngang */
+}
+
+/* 2. Cho phép Sidebar cuộn (Nếu menu quá dài) */
+.glass-sidebar {
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+/* Tinh chỉnh thanh cuộn riêng cho Sidebar (Mỏng hơn chút) */
+.glass-sidebar::-webkit-scrollbar {
+  width: 4px;
+}
