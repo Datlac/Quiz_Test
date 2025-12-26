@@ -509,6 +509,34 @@ class LearningApp {
       }
     };
   }
+  // --- SIDEBAR LOGIC ---
+  toggleSidebar() {
+    const sidebar = document.getElementById("app-sidebar");
+    const overlay = document.getElementById("sidebar-overlay");
+
+    if (sidebar && overlay) {
+      sidebar.classList.toggle("active");
+      overlay.classList.toggle("active");
+
+      // Cập nhật thông tin lên sidebar mỗi khi mở
+      if (sidebar.classList.contains("active")) {
+        this.updateSidebarInfo();
+      }
+    }
+  }
+
+  updateSidebarInfo() {
+    const rankEl = document.getElementById("sidebar-rank");
+    const xpEl = document.getElementById("sidebar-xp");
+
+    // Lấy Rank hiện tại (Copy logic từ renderDashboard hoặc tách hàm riêng)
+    // Để đơn giản, ta hiển thị XP trước
+    if (xpEl) xpEl.innerText = `${this.stats.xp} XP`;
+
+    // Lấy tên Rank từ DOM của dashboard nếu có, hoặc tính lại
+    const currentRankName = document.getElementById("rank-name")?.innerText;
+    if (rankEl && currentRankName) rankEl.innerText = currentRankName;
+  }
 }
 
 // Khởi tạo ứng dụng
