@@ -1785,3 +1785,21 @@ body.dark-mode .streak-bar-mini {
   background: rgba(0, 0, 0, 0.2);
   border-radius: 10px;
 }
+/* --- FIX: TƯƠNG PHẢN CHỮ TRONG THẺ BÀI HỌC (DARK MODE) --- */
+/* Vì nền thẻ là gradient sáng, nên chữ bắt buộc phải màu tối mới đọc được */
+
+body.dark-mode .course-card h3 {
+  color: #1e293b !important; /* Màu đen than chì đậm */
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4); /* Tạo viền sáng nhẹ để chữ nổi hơn */
+}
+
+body.dark-mode .course-card .card-meta {
+  color: #334155 !important; /* Màu xám đậm cho số lượng câu */
+  font-weight: 700;
+}
+
+/* Tăng độ đậm của thẻ trong nền tối để đỡ bị chói */
+body.dark-mode .course-card {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+}

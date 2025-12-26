@@ -299,11 +299,23 @@ class LearningApp {
       Object.keys(this.allData).forEach((key) => {
         const count = this.allData[key].length;
         let icon = "fa-book";
-        if (key.toLowerCase().includes("hci")) icon = "fa-laptop-code";
-        else if (key.toLowerCase().includes("english")) icon = "fa-language";
+        let colorClass = "grad-blue"; // Mặc định màu xanh dương
+
+        if (key.toLowerCase().includes("hci")) {
+          icon = "fa-laptop-code";
+          colorClass = "grad-purple"; // Màu Tím
+        } else if (key.toLowerCase().includes("english")) {
+          icon = "fa-language";
+          colorClass = "grad-green"; // Màu Xanh lá
+        } else if (key.toLowerCase().includes("history")) {
+          icon = "fa-landmark";
+          colorClass = "grad-orange"; // Màu Cam
+        }
 
         const card = document.createElement("div");
-        card.className = "course-card";
+        // Thêm colorClass vào đây
+        card.className = `course-card ${colorClass}`;
+
         card.onclick = (e) => {
           createRipple(e);
           this.startQuiz(key);
