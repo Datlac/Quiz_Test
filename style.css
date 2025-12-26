@@ -74,47 +74,73 @@ body {
   gap: 16px;
 }
 
+/* --- 1. KHỐI ĐÁP ÁN (OPTION CARDS - GIAO DIỆN MỚI) --- */
 .option-card {
   padding: 20px;
-  background: rgba(255, 255, 255, 0.8);
-  border: 2px solid transparent;
-  border-radius: 20px;
+  margin-bottom: 12px;
+  border-radius: 16px;
+  font-size: 1.05rem;
+  font-weight: 500;
   cursor: pointer;
-  font-size: 1.1rem;
-  transition: all 0.3s var(--ease); /* 3. Phản hồi mượt 0.3s */
+  transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+
+  /* Light Mode Default */
+  background: white;
+  border: 2px solid transparent;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.02);
+  color: var(--text-main);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: relative;
+  overflow: hidden;
 }
 
-.option-card:hover {
-  transform: translateY(-3px);
-  background: #fff;
-  border-color: #6e8efb;
-  box-shadow: 0 10px 20px rgba(110, 142, 251, 0.1);
+/* Hover Effect */
+.option-card:hover:not(.disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.05);
+  border-color: #a777e3;
 }
 
-/* Phản hồi vi mô */
+/* TRẠNG THÁI ĐÚNG/SAI (LIGHT MODE) */
 .option-card.correct {
-  background: #d4f8e2;
-  border-color: #2ecc71;
-  color: #155724;
+  background: #ecfdf5 !important;
+  border-color: #10b981 !important;
+  color: #065f46 !important;
+  font-weight: 700;
 }
 .option-card.wrong {
-  background: #fdeaea;
-  border-color: #e74c3c;
-  color: #721c24;
-  animation: shake 0.4s var(--ease); /* 3. Rung nhẹ */
+  background: #fef2f2 !important;
+  border-color: #ef4444 !important;
+  color: #991b1b !important;
+  opacity: 0.9;
 }
 
-@keyframes shake {
-  0%,
-  100% {
-    transform: translateX(0);
-  }
-  25% {
-    transform: translateX(-5px);
-  }
-  75% {
-    transform: translateX(5px);
-  }
+/* DARK MODE STYLES (NEON GLASS) */
+body.dark-mode .option-card {
+  background: rgba(30, 41, 59, 0.6);
+  color: #e2e8f0;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+body.dark-mode .option-card:hover:not(.disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: #6e8efb;
+}
+
+body.dark-mode .option-card.correct {
+  background: rgba(16, 185, 129, 0.15) !important;
+  border: 2px solid #10b981 !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.25);
+}
+
+body.dark-mode .option-card.wrong {
+  background: rgba(239, 68, 68, 0.15) !important;
+  border: 2px solid #ef4444 !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.25);
 }
 
 /* 6. Thanh tiến trình dải ánh sáng */
@@ -559,13 +585,53 @@ body.dark-mode .option-card:hover {
 }
 
 /* 2. Khu vực Feedback & Nút Next */
+/* --- 2. KHỐI FEEDBACK (MESSAGE BUBBLE) --- */
 #feedback-area {
-  animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  background: rgba(255, 255, 255, 0.6);
-  border: 1px solid rgba(255, 255, 255, 0.8);
-  border-radius: 16px;
-  padding: 20px;
   margin-top: 25px;
+  padding: 20px;
+  border-radius: 16px;
+  animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+
+  /* Logic: Hộp thông báo nổi bật */
+  background: rgba(255, 255, 255, 0.95);
+  border-left: 6px solid #ddd; /* Viền trái mặc định */
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+}
+
+@keyframes popIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Màu viền trạng thái (Sẽ được JS thêm vào) */
+.feedback-correct {
+  border-color: #10b981 !important;
+}
+.feedback-wrong {
+  border-color: #ef4444 !important;
+}
+
+/* Text nội dung */
+#micro-hint {
+  font-size: 1rem;
+  line-height: 1.6;
+  color: #334155;
+}
+
+/* DARK MODE FEEDBACK */
+body.dark-mode #feedback-area {
+  background: rgba(30, 41, 59, 0.9);
+  color: #f1f5f9;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+body.dark-mode #micro-hint {
+  color: #e2e8f0;
 }
 @keyframes slideUp {
   from {
@@ -1016,4 +1082,227 @@ body.dark-mode .option-card {
 body.dark-mode .option-card:hover {
   background: rgba(255, 255, 255, 0.15);
   border-color: #6e8efb; /* Viền xanh dương khi hover */
+}
+/* --- 3. KHỐI RANK (TIER LIST STYLE) --- */
+.rank-list-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.rank-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 15px 20px;
+  background: rgba(255, 255, 255, 0.6);
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.rank-item.high-tier {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.9),
+    rgba(255, 255, 255, 0.6)
+  );
+  border: 1px solid rgba(255, 215, 0, 0.4);
+  box-shadow: 0 4px 15px rgba(255, 215, 0, 0.15);
+}
+
+.rank-name {
+  font-weight: 800;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+  letter-spacing: 1px;
+}
+
+.rank-xp {
+  font-family: monospace;
+  font-weight: 700;
+  color: #64748b;
+  background: rgba(0, 0, 0, 0.05);
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+
+/* Dark Mode Rank */
+body.dark-mode .rank-item {
+  background: rgba(30, 41, 59, 0.4);
+  border-color: rgba(255, 255, 255, 0.05);
+}
+body.dark-mode .rank-xp {
+  color: #94a3b8;
+  background: rgba(255, 255, 255, 0.1);
+}
+/* --- FIX LỖI HIỂN THỊ PATH CARD (DARK MODE) --- */
+
+/* 1. Đặt nền tối cho thẻ bài học */
+body.dark-mode .path-card {
+  background: rgba(30, 41, 59, 0.6) !important; /* Nền xanh đen mờ */
+  border: 1px solid rgba(255, 255, 255, 0.1); /* Viền mỏng */
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4); /* Bóng đổ sâu */
+}
+
+/* 2. Hiệu ứng khi di chuột vào (Hover) */
+body.dark-mode .path-card:hover {
+  background: rgba(50, 60, 80, 0.8) !important; /* Sáng hơn chút */
+  border-color: #6e8efb; /* Viền phát sáng xanh */
+  transform: translateY(-5px);
+  box-shadow: 0 10px 30px rgba(110, 142, 251, 0.15);
+}
+
+/* 3. Chỉnh màu chữ tiêu đề cho rõ (Trắng sáng) */
+body.dark-mode .path-card h4 {
+  color: #ffffff !important;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+/* 4. Chỉnh màu chữ thông tin phụ (Số phút, số câu - Xám sáng) */
+body.dark-mode .path-card .path-meta {
+  color: #cbd5e1 !important;
+}
+
+/* 5. Chỉnh màu icon cho nổi bật (Tím/Xanh neon) */
+body.dark-mode .path-card i {
+  color: #a777e3;
+}
+
+/* 6. Thanh tiến độ nhỏ bên dưới card */
+body.dark-mode .path-card div[style*="background: #eee"] {
+  background: rgba(255, 255, 255, 0.1) !important; /* Làm tối thanh nền */
+}
+/* --- FIX CÁC PHẦN CÒN LẠI CHO DARK MODE --- */
+
+/* 1. Landing Page: Feature Items (Icon & Text) */
+body.dark-mode .feature-item {
+  color: #cbd5e1 !important; /* Đổi màu chữ thành xám sáng */
+}
+body.dark-mode .feature-item i {
+  color: #a777e3; /* Icon phát sáng màu tím */
+  text-shadow: 0 0 10px rgba(167, 119, 227, 0.5);
+}
+
+/* 2. Dashboard: Stat Cards (XP & Mistake) */
+body.dark-mode .stat-card {
+  background: rgba(30, 41, 59, 0.6) !important; /* Nền tối */
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+body.dark-mode .stat-card h3 {
+  color: #ffffff !important;
+}
+body.dark-mode .stat-card .label {
+  color: #94a3b8 !important; /* Màu label dịu hơn */
+}
+
+/* 3. Mistake Banner (Cảnh báo ôn tập) */
+body.dark-mode .mistake-banner {
+  /* Chuyển từ vàng chanh sang cam đất tối cho đỡ chói */
+  background: rgba(211, 84, 0, 0.15) !important;
+  border: 1px solid #d35400 !important;
+}
+body.dark-mode .mistake-banner h4 {
+  color: #e67e22 !important; /* Tiêu đề màu cam neon */
+}
+body.dark-mode .mistake-banner p {
+  color: #ecf0f1 !important;
+}
+/* Nút ôn tập trong banner */
+body.dark-mode .mistake-banner button {
+  background: #d35400 !important;
+  box-shadow: 0 4px 15px rgba(211, 84, 0, 0.4);
+}
+
+/* 4. Result Screen: Stat Items (Kết quả cuối cùng) */
+body.dark-mode .stat-item {
+  background: rgba(255, 255, 255, 0.05) !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+body.dark-mode .stat-item .label {
+  color: #cbd5e1 !important;
+}
+body.dark-mode .stat-item .value {
+  color: #6e8efb !important; /* Số liệu màu xanh sáng */
+  text-shadow: 0 0 10px rgba(110, 142, 251, 0.4);
+}
+
+/* 5. Knowledge Map Nodes (Các chấm tròn kết quả) */
+body.dark-mode .node {
+  background: #1e293b !important; /* Nền tối thay vì trắng */
+  color: #fff !important;
+  border-color: rgba(255, 255, 255, 0.2);
+}
+/* Giữ màu viền cho đúng/sai nhưng làm sáng hơn (Glow) */
+body.dark-mode .node.correct {
+  border-color: #2ecc71 !important;
+  background: rgba(46, 204, 113, 0.2) !important;
+  box-shadow: 0 0 10px rgba(46, 204, 113, 0.4);
+}
+body.dark-mode .node.wrong {
+  border-color: #e74c3c !important;
+  background: rgba(231, 76, 60, 0.2) !important;
+  box-shadow: 0 0 10px rgba(231, 76, 60, 0.4);
+}
+
+/* 6. Rank Card Text (Dòng chữ "Còn bao nhiêu XP...") */
+body.dark-mode #rank-next-text {
+  color: #94a3b8 !important;
+}
+
+/* 7. Nút Quay về / Làm lại (Action Buttons) */
+body.dark-mode .mode-btn {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+body.dark-mode .mode-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  border-color: white;
+}
+/* Nút phụ (Secondary) */
+body.dark-mode .mode-btn.secondary {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+/* --- FIX TOÀN DIỆN RANK CARD (DARK MODE) --- */
+
+/* 1. Đổi nền Card sang tông tối sang trọng (Deep Space) */
+body.dark-mode .rank-card {
+  /* Ghi đè nền gradient sáng cũ */
+  background: linear-gradient(
+    135deg,
+    rgba(30, 41, 59, 0.9),
+    rgba(15, 23, 42, 0.95)
+  ) !important;
+  /* Viền phát sáng nhẹ */
+  border: 1px solid rgba(255, 255, 255, 0.15) !important;
+  /* Bóng đổ sâu hơn để tách biệt khỏi nền */
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6) !important;
+}
+
+/* 2. Tiêu đề "Cấp độ hiện tại" */
+body.dark-mode .rank-card h3 {
+  color: #e2e8f0 !important; /* Đổi màu xám đậm thành trắng xám */
+  opacity: 0.9;
+  letter-spacing: 1px;
+}
+
+/* 3. Tên Rank (Quan trọng: Làm nó phát sáng) */
+body.dark-mode #rank-name {
+  /* text-shadow: currentColor sẽ lấy chính màu của Rank (Vàng/Đỏ/Tím...) để làm bóng */
+  text-shadow: 0 0 25px currentColor !important;
+  filter: brightness(1.3); /* Tăng độ sáng lên 30% */
+}
+
+/* 4. Dòng chữ nhỏ "Còn ... XP nữa" */
+body.dark-mode #rank-next-text {
+  color: #94a3b8 !important; /* Đổi màu #666 cũ thành xám xanh sáng */
+}
+
+/* 5. Sửa thanh nền của Progress Bar (CỰC QUAN TRỌNG) */
+/* Selector này chọn thẻ div thanh nền đang bị style inline là màu đen mờ */
+body.dark-mode .rank-card div[style*="rgba(0, 0, 0, 0.1)"],
+body.dark-mode .rank-card div[style*="rgba(0,0,0,0.1)"] {
+  background: rgba(255, 255, 255, 0.15) !important; /* Đổi sang trắng mờ */
 }

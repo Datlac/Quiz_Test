@@ -314,13 +314,38 @@ class LearningApp {
     this.stats.totalAnswered++;
     localStorage.setItem("mp_stats", JSON.stringify(this.stats));
 
-    if (this.ui.microHint) {
+    // --- CẬP NHẬT LOGIC FEEDBACK MỚI ---
+    if (this.ui.feedbackArea && this.ui.microHint) {
+      // 1. Reset class màu cũ
+      this.ui.feedbackArea.classList.remove(
+        "feedback-correct",
+        "feedback-wrong"
+      );
+
+      // 2. Thêm class màu mới dựa trên kết quả
+      this.ui.feedbackArea.classList.add(
+        isCorrect ? "feedback-correct" : "feedback-wrong"
+      );
+
+      // 3. Render nội dung dạng hộp tin nhắn (Dễ đọc hơn)
       this.ui.microHint.innerHTML = `
-            <div class="${isCorrect ? "msg-success" : "msg-error"}">
-                <strong>${
-                  isCorrect ? "Chính xác! 🎉" : "Chưa đúng rồi 😅"
-                }</strong><br>
-                ${q.explanation}
+            <div style="display: flex; align-items: start; gap: 12px;">
+                <div style="font-size: 1.6rem; line-height: 1;">${
+                  isCorrect ? "🎉" : "💡"
+                }</div>
+                <div>
+                    <strong style="
+                        color: ${isCorrect ? "#10b981" : "#ef4444"}; 
+                        font-size: 1.1rem; 
+                        display: block; 
+                        margin-bottom: 4px;
+                    ">
+                        ${isCorrect ? "Tuyệt vời!" : "Đáp án đúng là:"}
+                    </strong>
+                    <span style="opacity: 0.95; font-size: 0.95rem;">${
+                      q.explanation
+                    }</span>
+                </div>
             </div>
         `;
     }
