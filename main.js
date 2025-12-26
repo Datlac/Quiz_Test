@@ -119,6 +119,23 @@ class LearningApp {
       this.navigate("landing");
     }
     this.attachGlobalEvents();
+    // THÊM: Kết nối với Firebase Auth (nếu script đã load)
+    if (window.authServices) {
+      window.authServices.monitorAuth((user) => {
+        if (user) {
+          // Người dùng đã đăng nhập -> Lưu info vào stats để dùng
+          this.userProfile = {
+            name: user.displayName,
+            photo: user.photoURL,
+            uid: user.uid,
+          };
+          this.renderDashboard(); // Render lại để hiện Avatar thật
+          this.updateSidebarInfo(); // Cập nhật Sidebar
+        } else {
+          this.userProfile = null; // Khách
+        }
+      });
+    }
   }
 
   attachGlobalEvents() {
@@ -262,6 +279,46 @@ class LearningApp {
             `;
         pathContainer.appendChild(card);
       });
+    }
+    // 1. Header Logic
+    // Kiểm tra xem có profile chưa (từ Firebase)
+    const userAvatar = this.userProfile
+      ? `<img src="${this.userProfile.photo}" style="width:100%; height:100%; border-radius:50%">`
+      : `<i class="fas fa-user-astronaut"></i>`;
+
+    const userName = this.userProfile ? this.userProfile.name : "Khách";
+    const loginAction = this.userProfile
+      ? ""
+      : "onclick='window.authServices.login()'"; // Nếu chưa login thì bấm vào để login
+
+    if (headerEl) {
+      headerEl.innerHTML = `
+        <div class="welcome-header">
+            <div>
+                <h1>${greeting},<br/>${userName}!</h1> <p class="subtitle">Sẵn sàng bứt phá hôm nay?</p>
+            </div>
+            
+            <div class="user-badge" ${loginAction}>
+                <div class="avatar">${userAvatar}</div>
+                <div style="display:flex; flex-direction:column; line-height:1.2">
+                    <span style="font-weight:700; font-size:0.9rem; color:${
+                      rank.color
+                    }">${rank.name}</span>
+                    <span style="font-size:0.75rem; opacity:0.7">${
+                      this.stats.xp
+                    } XP</span>
+                </div>
+            </div>
+        </div>
+        
+        ${
+          !this.userProfile
+            ? `<button class="hero-btn" onclick="window.authServices.login()" style="margin-bottom:20px; background:#4285F4">
+             <i class="fab fa-google"></i> Đăng nhập với Google để lưu tiến độ
+           </button>`
+            : ""
+        }
+    `;
     }
   }
 

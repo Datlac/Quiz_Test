@@ -91,6 +91,12 @@
           >
             <i class="fas fa-dragon"></i> Bí mật
           </li>
+          <button
+            class="danger-btn"
+            onclick="if(window.authServices) window.authServices.logout()"
+          >
+            <i class="fas fa-sign-out-alt"></i> Đăng xuất
+          </button>
         </ul>
 
         <div class="sidebar-footer">
@@ -252,6 +258,62 @@
         </div>
       </div>
     </div>
+
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+      import {
+        getAuth,
+        GoogleAuthProvider,
+        signInWithPopup,
+        signOut,
+        onAuthStateChanged,
+      } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+      import {
+        getFirestore,
+        doc,
+        getDoc,
+        setDoc,
+      } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+      // Dán config bạn vừa copy ở Bước 2 vào đây
+      const firebaseConfig = {
+        apiKey: "YOUR_API_KEY_HERE",
+        authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_PROJECT_ID.appspot.com",
+        messagingSenderId: "...",
+        appId: "...",
+      };
+
+      // Khởi tạo Firebase
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
+      const db = getFirestore(app);
+      const provider = new GoogleAuthProvider();
+
+      // Đưa các hàm Auth ra phạm vi toàn cục (window) để main.js gọi được
+      window.authServices = {
+        login: () => {
+          signInWithPopup(auth, provider)
+            .then((result) => {
+              console.log("Logged in:", result.user);
+              // Sau khi login, main.js sẽ tự bắt sự kiện qua onAuthStateChanged
+              alert(`Chào mừng ${result.user.displayName}!`);
+            })
+            .catch((error) => console.error("Login failed", error));
+        },
+        logout: () => {
+          signOut(auth).then(() => {
+            alert("Đã đăng xuất!");
+            location.reload(); // Refresh để xóa state cũ
+          });
+        },
+        // Lắng nghe trạng thái đăng nhập
+        monitorAuth: (callback) => {
+          onAuthStateChanged(auth, callback);
+        },
+      };
+    </script>
 
     <script src="question.js"></script>
     <script src="main.js"></script>
