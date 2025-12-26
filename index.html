@@ -18,69 +18,130 @@
     <div class="bg-glow"></div>
 
     <nav class="navbar">
-      <div class="logo">MindPath</div>
+      <div class="logo" onclick="app.navigate('landing')">MindPath</div>
       <div class="nav-links">
         <button id="theme-toggle" class="nav-btn">
           <i class="fas fa-moon"></i>
         </button>
-        <button onclick="location.reload()" class="nav-btn">
-          <i class="fas fa-home"></i>
+        <button
+          id="dashboard-btn"
+          class="nav-btn"
+          style="display: none"
+          onclick="app.navigate('dashboard')"
+        >
+          <i class="fas fa-columns"></i>
         </button>
       </div>
     </nav>
 
     <div id="app-container">
-      <div id="start-screen" class="glass-card">
-        <h2>Chào mừng trở lại! 👋</h2>
-        <p>Chọn chủ đề để kích hoạt trạng thái "Flow"</p>
+      <section id="view-landing" class="view-section">
+        <div class="glass-card hero-card">
+          <h1>
+            Học nhanh. Nhớ lâu.<br />Chỉ
+            <span class="highlight">5 phút</span> mỗi ngày.
+          </h1>
+          <p>
+            Hệ thống trắc nghiệm thông minh sử dụng Spaced Repetition giúp bạn
+            chinh phục kiến thức HCI & Tiếng Anh dễ dàng.
+          </p>
+          <button class="cta-btn pulse" onclick="app.enterApp()">
+            🚀 Bắt đầu ngay
+          </button>
 
-        <div id="category-list" class="mode-selector"></div>
-
-        <button
-          id="mistake-btn"
-          class="mode-btn secondary"
-          style="display: none"
-          onclick="app.startMistakeMode()"
-        >
-          <i class="fas fa-brain"></i> Ôn lại kiến thức hổng
-        </button>
-      </div>
-
-      <main id="quiz-flow" class="glass-card" style="display: none">
-        <div class="quiz-header">
-          <div class="timer-badge">
-            <i class="fas fa-clock"></i> <span id="timer">15</span>s
+          <div class="feature-grid">
+            <div class="feature-item">
+              <i class="fas fa-bolt"></i> <span>Học siêu tốc</span>
+            </div>
+            <div class="feature-item">
+              <i class="fas fa-brain"></i> <span>Ôn tập thông minh</span>
+            </div>
+            <div class="feature-item">
+              <i class="fas fa-chart-line"></i> <span>Theo dõi tiến độ</span>
+            </div>
           </div>
-          <div class="progress-wrapper">
-            <div id="progress-track">
-              <div id="progress-glow"></div>
+        </div>
+      </section>
+
+      <section id="view-dashboard" class="view-section" style="display: none">
+        <div class="dashboard-header">
+          <div>
+            <h2>Chào bạn trở lại! 👋</h2>
+            <p>Hôm nay bạn muốn chinh phục gì?</p>
+          </div>
+          <div class="streak-badge">
+            🔥 <span id="dash-streak">0</span> Ngày Streak
+          </div>
+        </div>
+
+        <div class="stats-overview">
+          <div class="stat-card">
+            <div class="icon xp-icon">✨</div>
+            <div class="info">
+              <span class="label">Tổng XP</span>
+              <h3 id="dash-xp">0</h3>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="icon mistake-icon">🧠</div>
+            <div class="info">
+              <span class="label">Cần ôn tập</span>
+              <h3 id="dash-mistakes">0</h3>
             </div>
           </div>
         </div>
 
-        <div id="question-scene">
-          <div id="micro-hint" class="hint-text"></div>
-          <h2 id="question-text">Loading...</h2>
-          <div id="options-grid"></div>
+        <h3 class="section-title">Lộ trình học tập</h3>
+        <div class="path-grid" id="path-container"></div>
+
+        <div id="mistake-alert" class="mistake-banner" style="display: none">
+          <div class="content">
+            <h4>🧠 Khoang đã!</h4>
+            <p>
+              Bạn có <b id="mistake-count">0</b> câu kiến thức hổng cần trám
+              lại.
+            </p>
+          </div>
+          <button onclick="app.startMistakeMode()">Ôn ngay</button>
         </div>
-      </main>
+      </section>
 
-      <div id="review-scene" class="glass-card" style="display: none"></div>
+      <section id="view-quiz" class="view-section" style="display: none">
+        <div class="glass-card">
+          <div class="quiz-header">
+            <button class="back-btn" onclick="app.navigate('dashboard')">
+              <i class="fas fa-arrow-left"></i>
+            </button>
 
-      <footer class="learning-stats">
-        <span id="streak-info">🔥 Streak: 0</span>
-        <span id="xp-info">✨ 0 XP</span>
-      </footer>
+            <div class="progress-info">
+              <span id="progress-text">Câu 1/--</span>
+            </div>
+            <div class="progress-wrapper">
+              <div id="progress-glow"></div>
+            </div>
+            <div class="timer-badge" id="timer">15s</div>
+          </div>
+          <div id="question-scene">
+            <h2 id="question-text">Loading...</h2>
+            <div id="options-grid"></div>
+            <div id="feedback-area" style="display: none">
+              <div id="micro-hint"></div>
+              <button
+                id="next-btn"
+                class="action-btn primary-btn"
+                onclick="app.nextStep()"
+              >
+                Tiếp theo ➝
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-result" class="view-section" style="display: none">
+        <div class="glass-card" id="result-content"></div>
+      </section>
     </div>
-
-    <audio
-      id="sound-correct"
-      src="https://assets.mixkit.co/sfx/preview/mixkit-arcade-score-interface-217.mp3"
-    ></audio>
-    <audio
-      id="sound-wrong"
-      src="https://assets.mixkit.co/sfx/preview/mixkit-wrong-answer-fail-notification-946.mp3"
-    ></audio>
 
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
     <script src="question.js"></script>
