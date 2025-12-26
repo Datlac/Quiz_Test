@@ -61,11 +61,12 @@ body {
   min-height: 100vh;
   display: flex;
   justify-content: center;
-  align-items: center; /* Căn giữa dọc */
+  /* align-items: center;  <-- XÓA HOẶC COMMENT DÒNG NÀY */
+  align-items: flex-start; /* <-- THAY BẰNG DÒNG NÀY */
   color: var(--text-main);
   transition: background 0.5s ease;
   overflow-x: hidden;
-  padding-top: 80px; /* Chừa chỗ cho navbar */
+  padding-top: 100px; /* Tăng khoảng cách để không bị Navbar che */
   padding-bottom: 40px;
 }
 

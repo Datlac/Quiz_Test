@@ -125,31 +125,30 @@ class LearningApp {
     }
     this.attachGlobalEvents();
     // THÊM: Kết nối với Firebase Auth (nếu script đã load)
-    if (window.authServices) {
-      window.authServices.monitorAuth(async (user) => {
-        if (user) {
-          // Người dùng đã đăng nhập -> Lưu info vào stats để dùng
-          this.userProfile = {
-            name: user.displayName,
-            photo: user.photoURL,
-            uid: user.uid,
-          };
-
-          // --- MỚI: Tải dữ liệu từ Cloud ---
-          const cloudData = await window.authServices.loadProgress(user.uid);
-          if (cloudData) {
-            // Hợp nhất dữ liệu cloud với dữ liệu local (Cloud ưu tiên hơn)
-            this.stats = { ...this.stats, ...cloudData };
-            console.log("📥 Đã tải dữ liệu đồng bộ:", this.stats);
-            this.saveStats(); // Lưu lại vào local máy này luôn
+    setTimeout(() => {
+      if (window.authServices) {
+        window.authServices.monitorAuth(async (user) => {
+          if (user) {
+            this.userProfile = {
+              name: user.displayName,
+              photo: user.photoURL,
+              uid: user.uid,
+            };
+            // Tải dữ liệu cloud
+            const cloudData = await window.authServices.loadProgress(user.uid);
+            if (cloudData) {
+              this.stats = { ...this.stats, ...cloudData };
+              this.saveStats();
+            }
+            this.renderDashboard();
+            this.updateSidebarInfo();
+          } else {
+            this.userProfile = null;
+            this.renderDashboard();
           }
-          this.renderDashboard(); // Render lại để hiện Avatar thật
-          this.updateSidebarInfo(); // Cập nhật Sidebar
-        } else {
-          this.userProfile = null; // Khách
-        }
-      });
-    }
+        });
+      }
+    }, 1000); // Chờ 1 giây
   }
 
   attachGlobalEvents() {
@@ -652,5 +651,4 @@ class LearningApp {
   }
 }
 
-// Start
-const app = new LearningApp(quizData);
+window.app = new LearningApp(quizData);
