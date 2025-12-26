@@ -35,19 +35,14 @@ class LearningFlowApp {
   loadStep() {
     const q = this.questions[this.currentIdx];
 
-    // Adaptive UI: Font lớn hơn nếu câu trước sai
-    if (this.history[this.currentIdx - 1]?.isCorrect === false) {
-      this.ui.text.style.fontSize = "1.8rem";
-    } else {
-      this.ui.text.style.fontSize = "1.6rem";
-    }
-
-    this.ui.text.innerText = q.q;
+    // 5. Tập trung tuyệt đối: Xóa bỏ các yếu tố gây nhiễu
     this.ui.grid.innerHTML = "";
-    this.ui.hint.innerText = "";
+    this.ui.hint.innerHTML = "";
+    this.ui.text.innerText = q.q;
 
+    // 2. Thanh tiến trình mờ (không số)
     this.ui.progress.style.width = `${
-      ((this.currentIdx + 1) / this.questions.length) * 100
+      (this.currentIdx / this.questions.length) * 100
     }%`;
 
     q.options.forEach((opt, i) => {
@@ -63,44 +58,42 @@ class LearningFlowApp {
     const q = this.questions[this.currentIdx];
     const isCorrect = index === q.a;
     const cards = this.ui.grid.querySelectorAll(".option-card");
-    const cardContainer = document.querySelector(".glass-card");
 
     cards.forEach((c) => (c.style.pointerEvents = "none"));
 
+    // 7. Phản hồi màu sắc có kiểm soát
     if (isCorrect) {
       cards[index].classList.add("correct");
-      this.ui.hint.innerText = "✨ " + q.feedbackOk;
-
-      this.currentStreak++;
-      if (this.currentStreak >= this.streakThreshold) {
-        cardContainer.classList.add("streak-active");
-        this.ui.streakBadge.innerText = `🔥 STREAK x${this.currentStreak}`;
-        this.ui.streakBadge.classList.add("show");
-        this.xp += 20 * this.currentStreak;
-      } else {
-        this.xp += 20;
-      }
+      this.ui.hint.innerHTML = `<p style="color: var(--success-soft)"><b>Chính xác!</b> ${q.feedbackOk}</p>`;
     } else {
       cards[index].classList.add("wrong");
       cards[q.a].classList.add("correct");
-      this.ui.hint.innerText = "💡 " + q.feedbackFail;
-
-      this.currentStreak = 0;
-      cardContainer.classList.remove("streak-active");
-      this.ui.streakBadge.classList.remove("show");
+      this.ui.hint.innerHTML = `<p style="color: var(--error-soft)"><b>Gợi ý:</b> ${q.feedbackFail}</p>`;
     }
 
-    this.updateStats();
-    this.history.push({ qId: q.id, isCorrect, tag: q.tag });
+    // 6. Nút hành động rõ ràng & nhất quán
+    const controls = document.createElement("div");
+    controls.style.marginTop = "30px";
 
-    setTimeout(() => {
-      this.currentIdx++;
-      if (this.currentIdx < this.questions.length) {
-        this.loadStep();
-      } else {
-        this.showKnowledgeMap();
-      }
-    }, 1500);
+    const nextBtn = document.createElement("button");
+    nextBtn.className = "action-btn primary-btn";
+    nextBtn.innerText =
+      this.currentIdx === this.questions.length - 1
+        ? "Xem kết quả"
+        : "Tiếp theo";
+    nextBtn.onclick = () => this.goToNext();
+
+    controls.appendChild(nextBtn);
+    this.ui.grid.appendChild(controls);
+  }
+
+  goToNext() {
+    this.currentIdx++;
+    if (this.currentIdx < this.questions.length) {
+      this.loadStep();
+    } else {
+      this.showKnowledgeMap();
+    }
   }
 
   updateStats() {
@@ -111,16 +104,32 @@ class LearningFlowApp {
   showKnowledgeMap() {
     this.ui.scenes.quiz.style.display = "none";
     this.ui.scenes.review.style.display = "block";
-    const mapContainer = document.getElementById("knowledge-map");
 
+    // 3. Màn hình kết thúc: Tổng kết điểm
+    const correctCount = this.history.filter((h) => h.isCorrect).length;
+    const summaryText =
+      correctCount > this.questions.length / 2
+        ? "🌟 Tuyệt vời! Bạn đã nắm vững kiến thức."
+        : "📘 Cố gắng lên! Hãy xem lại các câu sai nhé.";
+
+    document.getElementById(
+      "mistake-analysis"
+    ).innerHTML = `<h4>${summaryText}</h4><p>Bạn đúng ${correctCount}/${this.questions.length} câu.</p>`;
+
+    // 4. Review Mode: Click vào node để xem lại chi tiết
+    const mapContainer = document.getElementById("knowledge-map");
     mapContainer.innerHTML = this.history
       .map(
-        (h) => `
-            <div class="node ${h.isCorrect ? "correct" : "wrong"}">
-                <span>${h.isCorrect ? "✔" : "✘"}</span>
-                <small>${h.tag}</small>
-            </div>
-        `
+        (h, i) => `
+        <div class="node ${
+          h.isCorrect ? "correct" : "wrong"
+        }" onclick="alert('Câu hỏi: ${h.question}\\nBạn chọn: ${
+          h.selected
+        }\\nĐáp án đúng: ${h.correct}')">
+            <span>${i + 1}</span>
+            <small>${h.tag}</small>
+        </div>
+    `
       )
       .join("");
   }

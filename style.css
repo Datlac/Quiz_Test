@@ -219,3 +219,99 @@ body {
   font-size: 0.7rem;
   margin-top: 5px;
 }
+/* 2. Progress Indicator mờ (Reduce Anxiety) */
+.progress-wrapper {
+  background: rgba(0, 0, 0, 0.05); /* Thanh mờ không số */
+  overflow: hidden;
+}
+
+/* 3. Action Button cho màn hình kết quả */
+.action-btn {
+  margin-top: 20px;
+  padding: 15px 30px;
+  border: none;
+  border-radius: 15px;
+  background: var(--primary-glow);
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.action-btn:active {
+  transform: scale(0.95);
+} /* Phản hồi khi nhấn */
+
+.next-step-btn {
+  animation: fadeIn 0.5s ease forwards;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* 4. Review Node chi tiết */
+.node {
+  cursor: help; /* Gợi ý người dùng có thể click xem lại */
+}
+:root {
+  /* 7. Màu sắc phản hồi có kiểm soát (Universal usability) */
+  --success-soft: #4caf50; /* Xanh dịu */
+  --error-soft: #e57373; /* Đỏ dịu */
+  --neutral-bg: #f5f7fa;
+  --primary-btn: #6e8efb;
+  --secondary-btn: #a0aec0;
+  --text-dark: #2d3748;
+}
+
+/* 5. One-question-per-screen: Màn hình toàn trang, tập trung tuyệt đối */
+body {
+  background-color: var(--neutral-bg); /* Nền trung tính */
+  color: var(--text-dark);
+}
+
+.glass-card {
+  padding: 60px 40px; /* Tăng khoảng trắng để giảm cognitive load */
+  min-height: 450px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* 6. Chuẩn hóa Nút hành động (Consistency) */
+.action-btn {
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  transition: all 0.2s;
+  border: none;
+  cursor: pointer;
+}
+
+.primary-btn {
+  background: var(--primary-btn);
+  color: white;
+} /* Tiếp theo */
+.secondary-btn {
+  background: var(--secondary-btn);
+  color: white;
+  margin-right: 10px;
+} /* Quay lại/Bỏ qua */
+
+/* Màu phản hồi dịu */
+.option-card.correct {
+  background: #e8f5e9 !important;
+  border-color: var(--success-soft) !important;
+  color: #2e7d32;
+}
+
+.option-card.wrong {
+  background: #ffebee !important;
+  border-color: var(--error-soft) !important;
+  color: #c62828;
+}
