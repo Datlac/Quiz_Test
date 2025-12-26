@@ -1931,3 +1931,103 @@ body {
 .glass-sidebar::-webkit-scrollbar {
   width: 4px;
 }
+/* --- TOOTHLESS MEME POPUP STYLES --- */
+
+/* Lớp nền tối phủ toàn màn hình */
+.meme-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.85); /* Nền tối đậm */
+  z-index: 2000; /* Cao hơn mọi thứ khác */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  /* Mặc định ẩn */
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(5px);
+}
+
+/* Khi kích hoạt */
+.meme-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Hộp nội dung chính */
+/* Sửa lại đoạn này trong style.css */
+.meme-content {
+  position: relative;
+  width: 90%;
+  max-width: 500px; /* Nhỏ hơn chút vì GIF vuông hơn video */
+  /* aspect-ratio: 16/9;  <-- XÓA DÒNG NÀY ĐI (để chiều cao tự động theo GIF) */
+  background: transparent; /* Đổi nền đen thành trong suốt */
+  border-radius: 20px;
+  overflow: hidden;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+  transform: scale(0.8);
+  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.meme-overlay.active .meme-content {
+  transform: scale(1);
+}
+
+/* Container chứa video để responsive */
+.video-container {
+  width: 100%;
+  height: 100%;
+  pointer-events: none; /* Chặn click vào video YouTube để không hiện controls */
+}
+
+/* Nút đóng */
+.meme-close-btn {
+  position: absolute;
+  top: 15px;
+  right: 15px;
+  background: rgba(0, 0, 0, 0.5);
+  color: white;
+  border: none;
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  font-size: 1.2rem;
+  cursor: pointer;
+  z-index: 10;
+  transition: all 0.2s;
+}
+.meme-close-btn:hover {
+  background: rgba(231, 76, 60, 0.8);
+  transform: rotate(90deg);
+}
+/* --- CHẶN TƯƠNG TÁC MEME POPUP --- */
+
+/* 1. Vô hiệu hóa click vào nội dung GIF/Video */
+.meme-content .video-container,
+.meme-content .tenor-gif-embed {
+  pointer-events: none; /* ⛔ Chặn mọi cú click chuột, hover, kéo thả... */
+  user-select: none; /* ⛔ Không cho bôi đen/copy */
+}
+
+/* 2. Đảm bảo nút Close VẪN BẤM ĐƯỢC */
+.meme-close-btn {
+  pointer-events: auto !important; /* ✅ Bắt buộc cho phép click */
+  cursor: pointer;
+  z-index: 1000; /* Đảm bảo nút nằm trên cùng */
+}
+
+/* 3. Đảm bảo Click ra ngoài (vào lớp phủ đen) vẫn đóng được popup */
+.meme-overlay {
+  pointer-events: auto; /* Lớp nền vẫn nhận click để đóng */
+}
+
+/* 4. Ngăn chặn click lan truyền từ nội dung (Dự phòng) */
+.meme-content {
+  /* Giữ nguyên các thuộc tính cũ */
+  cursor: default; /* Đổi con trỏ chuột về mặc định thay vì bàn tay */
+}

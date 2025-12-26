@@ -537,6 +537,40 @@ class LearningApp {
     const currentRankName = document.getElementById("rank-name")?.innerText;
     if (rankEl && currentRankName) rankEl.innerText = currentRankName;
   }
+
+  // --- TOOTHLESS MEME LOGIC (PHIÊN BẢN GIF TENOR + AUDIO) ---
+
+  showToothlessMeme() {
+    const overlay = document.getElementById("meme-overlay");
+    const audio = document.getElementById("meme-audio");
+
+    if (overlay) {
+      overlay.classList.add("active");
+
+      // Nếu có thẻ audio thì bật nhạc
+      if (audio) {
+        audio.currentTime = 0; // Tua lại từ đầu
+        audio.volume = 0.5; // Âm lượng vừa phải
+        audio
+          .play()
+          .catch((e) => console.log("Trình duyệt chặn tự phát âm thanh"));
+      }
+    }
+  }
+
+  closeToothlessMeme() {
+    const overlay = document.getElementById("meme-overlay");
+    const audio = document.getElementById("meme-audio");
+
+    if (overlay) {
+      overlay.classList.remove("active");
+
+      // Tắt nhạc ngay lập tức khi đóng
+      if (audio) {
+        audio.pause();
+      }
+    }
+  }
 }
 
 // Khởi tạo ứng dụng

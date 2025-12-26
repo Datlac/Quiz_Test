@@ -72,6 +72,12 @@
           <li onclick="alert('Tính năng Cài đặt đang phát triển!')">
             <i class="fas fa-cog"></i> Cài đặt
           </li>
+          <li
+            onclick="app.showToothlessMeme(); app.toggleSidebar()"
+            style="color: #2ecc71"
+          >
+            <i class="fas fa-dragon"></i> Bí mật nho nhỏ
+          </li>
         </ul>
 
         <div class="sidebar-footer">
@@ -236,7 +242,42 @@
         <div class="glass-card" id="result-content"></div>
       </section>
     </div>
+    <div
+      id="meme-overlay"
+      class="meme-overlay"
+      onclick="app.closeToothlessMeme()"
+    >
+      <div class="meme-content" onclick="event.stopPropagation()">
+        <button class="meme-close-btn" onclick="app.closeToothlessMeme()">
+          <i class="fas fa-times"></i>
+        </button>
 
+        <div
+          class="tenor-gif-embed"
+          data-postid="15735082899997367911"
+          data-share-method="host"
+          data-aspect-ratio="1.27041"
+          data-width="100%"
+        >
+          <a
+            href="https://tenor.com/vi/view/dragons-toothless-dancing-meme-gif-14889599760105320441"
+            >Toothless Dancing Toothless Sticker</a
+          >
+        </div>
+        <script
+          type="text/javascript"
+          async
+          src="https://tenor.com/embed.js"
+        ></script>
+
+        <audio id="meme-audio" loop>
+          <source
+            src="assets/music/toothlessdancingmeme.mp3"
+            type="audio/mp3"
+          />
+        </audio>
+      </div>
+    </div>
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
     <script src="question.js"></script>
     <script src="main.js"></script>
