@@ -97,6 +97,11 @@ class LearningApp {
     } catch (e) {
       console.error("Save failed", e);
     }
+    // 2. --- MỚI: Lưu Cloud nếu đã đăng nhập ---
+    if (this.userProfile && window.authServices) {
+        // Gọi hàm saveProgress chúng ta vừa viết ở index.html
+        window.authServices.saveProgress(this.userProfile.uid, this.stats);
+    }
   }
 
   resetProgress() {
@@ -129,6 +134,15 @@ class LearningApp {
             photo: user.photoURL,
             uid: user.uid,
           };
+
+          // --- MỚI: Tải dữ liệu từ Cloud ---
+          const cloudData = await window.authServices.loadProgress(user.uid);
+          if (cloudData) {
+              // Hợp nhất dữ liệu cloud với dữ liệu local (Cloud ưu tiên hơn)
+              this.stats = { ...this.stats, ...cloudData };
+              console.log("📥 Đã tải dữ liệu đồng bộ:", this.stats);
+              this.saveStats(); // Lưu lại vào local máy này luôn
+          }
           this.renderDashboard(); // Render lại để hiện Avatar thật
           this.updateSidebarInfo(); // Cập nhật Sidebar
         } else {

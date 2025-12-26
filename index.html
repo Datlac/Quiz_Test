@@ -312,6 +312,36 @@
         monitorAuth: (callback) => {
           onAuthStateChanged(auth, callback);
         },
+        // 4. Lưu dữ liệu lên mây (Save)
+        saveProgress: async (uid, data) => {
+          try {
+            // Chỉ lưu những thông tin quan trọng
+            const payload = {
+              xp: data.xp,
+              streak: data.streak,
+              questionStats: data.questionStats || {},
+              lastLogin: new Date().toISOString(),
+            };
+            // Ghi đè/Cập nhật vào collection 'users', document là uid của user
+            await setDoc(doc(db, "users", uid), payload, { merge: true });
+            console.log("✅ Đã đồng bộ lên mây!");
+          } catch (e) {
+            console.error("❌ Lỗi lưu cloud:", e);
+          }
+        },
+
+        // 5. Tải dữ liệu từ mây (Load)
+        loadProgress: async (uid) => {
+          try {
+            const docSnap = await getDoc(doc(db, "users", uid));
+            if (docSnap.exists()) {
+              return docSnap.data();
+            }
+          } catch (e) {
+            console.error("❌ Lỗi tải cloud:", e);
+          }
+          return null;
+        },
       };
     </script>
 
