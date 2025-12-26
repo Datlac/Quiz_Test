@@ -29,11 +29,14 @@
       <button id="menu-toggle" class="nav-btn" onclick="app.toggleSidebar()">
         <i class="fas fa-bars"></i>
       </button>
+
       <div class="logo" onclick="app.navigate('landing')">MindPath</div>
+
       <div class="nav-links">
-        <button id="theme-toggle" class="nav-btn">
+        <button id="theme-toggle" class="nav-btn" aria-label="Toggle Dark Mode">
           <i class="fas fa-moon"></i>
         </button>
+
         <button
           id="dashboard-btn"
           class="nav-btn"
@@ -43,6 +46,7 @@
           <i class="fas fa-columns"></i>
         </button>
       </div>
+
       <div id="sidebar-overlay" onclick="app.toggleSidebar()"></div>
 
       <div id="app-sidebar" class="glass-sidebar">
@@ -278,6 +282,76 @@
         </audio>
       </div>
     </div>
+    <div id="mode-modal" class="meme-overlay">
+      <div
+        class="glass-card"
+        style="
+          width: 90%;
+          max-width: 500px;
+          text-align: center;
+          position: relative;
+        "
+      >
+        <button
+          class="meme-close-btn"
+          onclick="document.getElementById('mode-modal').classList.remove('active')"
+        >
+          <i class="fas fa-times"></i>
+        </button>
+
+        <h2 style="margin-bottom: 10px">🧠 Chọn Chế Độ Tư Duy</h2>
+        <p style="margin-bottom: 25px; color: #666">
+          Bạn muốn rèn luyện kỹ năng gì hôm nay?
+        </p>
+
+        <div class="mode-grid" style="display: grid; gap: 15px">
+          <button
+            class="mode-option-btn"
+            onclick="app.confirmStartQuiz('normal')"
+          >
+            <div class="icon">🌱</div>
+            <div class="text">
+              <strong>Normal</strong>
+              <span>Học cân bằng, 15s/câu</span>
+            </div>
+          </button>
+
+          <button
+            class="mode-option-btn"
+            onclick="app.confirmStartQuiz('speed')"
+          >
+            <div class="icon">⚡</div>
+            <div class="text">
+              <strong>Speed Mode</strong>
+              <span>Thử thách tốc độ, 5s/câu (x2 XP)</span>
+            </div>
+          </button>
+
+          <button
+            class="mode-option-btn"
+            onclick="app.confirmStartQuiz('focus')"
+          >
+            <div class="icon">🧘</div>
+            <div class="text">
+              <strong>Focus Mode</strong>
+              <span>Không giới hạn thời gian, ẩn UI thừa</span>
+            </div>
+          </button>
+
+          <button
+            class="mode-option-btn"
+            onclick="app.confirmStartQuiz('recall')"
+          >
+            <div class="icon">🔁</div>
+            <div class="text">
+              <strong>Recall (SRS)</strong>
+              <span>Chỉ ôn những câu sắp quên</span>
+            </div>
+          </button>
+        </div>
+      </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
     <script src="question.js"></script>
     <script src="main.js"></script>

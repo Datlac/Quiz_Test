@@ -7,16 +7,15 @@ const RANK_SYSTEM = [
 
   // Giai đoạn Cao thủ (User cam kết)
   { name: "Platinum", min: 1500, max: 2500, color: "#00cec9" },
-  { name: "Master", min: 2500, max: 4000, color: "#9b59b6" }, // <-- Mới thêm
-  { name: "Grandmaster", min: 4000, max: 6000, color: "#d63031" }, // <-- Mới thêm
+  { name: "Master", min: 2500, max: 4000, color: "#9b59b6" },
+  { name: "Grandmaster", min: 4000, max: 6000, color: "#d63031" },
 
   // Giai đoạn Huyền thoại (End Game)
-  { name: "Challenger", min: 6000, max: 9000, color: "#e84393" }, // <-- Mới thêm
-  { name: "Immortal", min: 9000, max: 13000, color: "#fdcb6e" }, // <-- Mới thêm
-  { name: "Apex", min: 13000, max: 99999, color: "#2d3436" }, // <-- Đỉnh cao
+  { name: "Challenger", min: 6000, max: 9000, color: "#e84393" },
+  { name: "Immortal", min: 9000, max: 13000, color: "#fdcb6e" },
+  { name: "Apex", min: 13000, max: 99999, color: "#2d3436" },
 ];
 
-// Giữ nguyên hàm helper logic
 function getRankByXP(xp) {
   return (
     RANK_SYSTEM.find((r) => xp >= r.min && xp < r.max) ||
@@ -31,6 +30,7 @@ function getNextRank(currentRank) {
   }
   return null;
 }
+
 class LearningApp {
   constructor(data) {
     this.allData = data;
@@ -39,8 +39,18 @@ class LearningApp {
       mistakeIds: [],
       streak: 0,
       lastLogin: null,
+      questionStats: {},
+      mistakeIds: [],
       completedLessons: [],
     };
+
+    // --- FIX DỮ LIỆU CŨ ---
+    if (!this.stats.questionStats) {
+      this.stats.questionStats = {};
+    }
+    if (!this.stats.mistakeIds) this.stats.mistakeIds = [];
+    if (typeof this.stats.xp !== "number") this.stats.xp = 0;
+    // ----------------------
 
     this.state = {
       currentIdx: 0,
@@ -49,13 +59,11 @@ class LearningApp {
       isMistakeMode: false,
     };
 
-    // --- MỚI 1: State cho Living Background ---
     this.sessionState = {
       currentStreak: 0,
       consecutiveWrong: 0,
     };
     this.bgElement = document.getElementById("living-bg");
-    // ------------------------------------------
 
     this.screens = {
       landing: document.getElementById("view-landing"),
@@ -111,128 +119,137 @@ class LearningApp {
     this.navigate("dashboard");
   }
 
+  // --- CẬP NHẬT RENDER DASHBOARD (GIAO DIỆN LEARNING HUB) ---
   renderDashboard() {
-    // 1. LOGIC RANK MỚI (SỬ DỤNG HÀM HELPER)
-    const currentXP = this.stats.xp;
-
-    // Tìm Rank hiện tại và Rank kế tiếp dựa trên min/max
-    const currentRank = getRankByXP(currentXP);
-    const nextRank = getNextRank(currentRank);
-
-    // Tính toán % tiến độ
-    let progressPercent = 100;
-    let nextText = "Bạn đã đạt cảnh giới tối cao!";
-
-    // Nếu còn rank tiếp theo để phấn đấu
-    if (nextRank) {
-      const xpInLevel = currentXP - currentRank.min;
-      const xpNeeded = nextRank.min - currentRank.min;
-      // Công thức tính % đã fix
-      progressPercent = Math.floor((xpInLevel / xpNeeded) * 100);
-      nextText = `Còn ${nextRank.min - currentXP} XP để lên ${nextRank.name}`;
-    }
-
-    // 2. Render Stats
-    const xpEl = document.getElementById("dash-xp");
-    if (xpEl) xpEl.innerText = this.stats.xp;
-
-    const streakEl = document.getElementById("dash-streak");
-    if (streakEl) streakEl.innerText = this.stats.streak;
-
-    const mistakeEl = document.getElementById("dash-mistakes");
-    if (mistakeEl) mistakeEl.innerText = this.stats.mistakeIds.length;
-
-    const mistakeCountEl = document.getElementById("mistake-count");
-    if (mistakeCountEl) mistakeCountEl.innerText = this.stats.mistakeIds.length;
-
-    const mistakeBanner = document.getElementById("mistake-alert");
-    if (mistakeBanner) {
-      mistakeBanner.style.display =
-        this.stats.mistakeIds.length > 0 ? "flex" : "none";
-    }
-
-    // 3. Render UI Rank
-    const rankNameEl = document.getElementById("rank-name");
-    const rankBarEl = document.getElementById("rank-progress-bar");
-    const rankTextEl = document.getElementById("rank-next-text");
-
-    if (rankNameEl) {
-      rankNameEl.innerText = currentRank.name;
-      rankNameEl.style.color = currentRank.color;
-      const highTiers = [
-        "Master",
-        "Grandmaster",
-        "Challenger",
-        "Immortal",
-        "Apex",
-      ];
-
-      if (highTiers.includes(currentRank.name)) {
-        // Tạo bóng đổ cùng màu với rank -> Hiệu ứng Neon
-        rankNameEl.style.textShadow = `0 0 15px ${currentRank.color}`;
-        rankNameEl.style.fontWeight = "900";
-      } else {
-        rankNameEl.style.textShadow = "none";
-        rankNameEl.style.fontWeight = "700";
-      }
-    }
-    if (rankBarEl) {
-      rankBarEl.style.width = `${progressPercent}%`;
-      rankBarEl.style.backgroundColor = currentRank.color;
-    }
-    if (rankTextEl) {
-      // Logic fix hiển thị Apex
-      const maxRankThreshold = RANK_SYSTEM[RANK_SYSTEM.length - 1].threshold;
-      if (currentXP >= maxRankThreshold) {
-        rankTextEl.innerHTML = "👑 Đỉnh cao vọng trọng! Bạn là huyền thoại.";
-        rankTextEl.style.color = "#ffd700";
-      } else {
-        rankTextEl.innerText = `Còn ${
-          nextRank.threshold - currentXP
-        } XP để lên ${nextRank.name}`;
-        rankTextEl.style.color = "";
-      }
-    }
-
-    // 4. Render Learning Paths
+    const dashboardHeader = document.getElementById(
+      "dashboard-header-container"
+    ); // Tạo div này trong HTML nếu chưa có, hoặc append vào view-dashboard
     const pathContainer = document.getElementById("path-container");
+    const mistakeBanner = document.getElementById("mistake-alert");
+
+    // 1. Render Greeting (Chào hỏi cá nhân hóa)
+    const hour = new Date().getHours();
+    let greeting = "Chào buổi sáng";
+    if (hour >= 12 && hour < 18) greeting = "Chào buổi chiều";
+    else if (hour >= 18) greeting = "Chào buổi tối";
+
+    // Tìm hoặc tạo khu vực Greeting ngay đầu Dashboard
+    let welcomeSection = document.getElementById("welcome-section");
+    if (!welcomeSection && pathContainer) {
+      welcomeSection = document.createElement("div");
+      welcomeSection.id = "welcome-section";
+      pathContainer.parentNode.insertBefore(welcomeSection, pathContainer);
+    }
+
+    if (welcomeSection) {
+      welcomeSection.innerHTML = `
+            <div class="welcome-header">
+                <div>
+                    <h1 class="greeting-text">${greeting}, Learner! 👋</h1>
+                    <p class="subtitle">Sẵn sàng chinh phục kiến thức hôm nay chưa?</p>
+                </div>
+                <div class="streak-pill">
+                    <i class="fas fa-fire"></i> 
+                    <span>${this.stats.streak} Ngày</span>
+                </div>
+            </div>
+        `;
+    }
+
+    // 2. Render Mistake Hero (Nút ôn tập nổi bật)
+    // Lấy top câu sai nhiều nhất để hiển thị
+    const allStats = Object.entries(this.stats.questionStats);
+    const weakQuestions = allStats.filter(([id, s]) => s.wrong > 0);
+
+    if (mistakeBanner) {
+      if (weakQuestions.length > 0) {
+        mistakeBanner.className = "mistake-hero"; // Class mới xịn hơn
+        mistakeBanner.style.display = "flex";
+        mistakeBanner.innerHTML = `
+                <div class="mistake-info">
+                    <div class="icon-box warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                    </div>
+                    <div>
+                        <h4>Cần ôn tập gấp!</h4>
+                        <p>Bạn có <strong style="color: #e17055">${weakQuestions.length} câu hỏi</strong> cần xem lại.</p>
+                    </div>
+                </div>
+                <button class="review-btn" onclick="app.startMistakeMode()">
+                    Chữa lỗi ngay <i class="fas fa-arrow-right"></i>
+                </button>
+            `;
+      } else {
+        mistakeBanner.style.display = "none";
+      }
+    }
+
+    // 3. Render Course Cards (Danh sách bài học)
     if (pathContainer) {
+      pathContainer.className = "course-grid"; // Đổi class để CSS mới ăn vào
       pathContainer.innerHTML = "";
+
       Object.keys(this.allData).forEach((key) => {
         const count = this.allData[key].length;
+
+        // Chọn icon và màu gradient dựa trên tên bài học (Example logic)
+        let icon = "fa-book";
+        let gradientClass = "grad-blue"; // Mặc định
+        let label = "General Knowledge";
+
+        if (key.toLowerCase().includes("hci")) {
+          icon = "fa-laptop-code";
+          gradientClass = "grad-purple";
+          label = "UX & Design";
+        } else if (
+          key.toLowerCase().includes("english") ||
+          key.toLowerCase().includes("tiếng anh")
+        ) {
+          icon = "fa-language";
+          gradientClass = "grad-green";
+          label = "Language Skills";
+        }
+
         const card = document.createElement("div");
-        card.className = "path-card";
+        card.className = `course-card ${gradientClass}`;
         card.onclick = () => this.startQuiz(key);
+
+        // HTML Card mới
         card.innerHTML = `
-            <h4>🚀 ${key.toUpperCase()}</h4>
-            <div class="path-meta">
-                <span><i class="fas fa-list"></i> ${count} Bài tập</span>
-                <span><i class="fas fa-clock"></i> ~${Math.ceil(
-                  count * 0.5
-                )} phút</span>
+            <div class="card-bg-decoration"></div>
+            <div class="card-icon">
+                <i class="fas ${icon}"></i>
             </div>
-            <div style="margin-top: 15px; width: 100%; height: 6px; background: #eee; border-radius: 3px;">
-                <div style="width: 0%; height: 100%; background: var(--primary-glow); border-radius: 3px;"></div>
+            <div class="card-content">
+                <span class="card-label">${label}</span>
+                <h3>${key.toUpperCase()}</h3>
+                <div class="card-meta">
+                    <span><i class="fas fa-layer-group"></i> ${count} Questions</span>
+                    <span><i class="fas fa-stopwatch"></i> ~${Math.ceil(
+                      count * 0.8
+                    )}m</span>
+                </div>
+            </div>
+            <div class="play-indicator">
+                <i class="fas fa-play"></i>
             </div>
         `;
         pathContainer.appendChild(card);
       });
     }
+
+    // Cập nhật các chỉ số Stats nhỏ khác nếu cần (giữ nguyên logic cũ của bạn)
+    this.updateStreak();
   }
 
   updateStreak() {
-    // Logic streak cơ bản
     const streakEl = document.getElementById("dash-streak");
     if (streakEl) streakEl.innerText = this.stats.streak;
   }
 
   startQuiz(category) {
-    this.state.currentCategory = category; // ✅ MỚI: Lưu lại bài đang học để tí nữa Retry
-    this.state.isMistakeMode = false;
-    this.state.questions = [...this.allData[category]].sort(
-      () => Math.random() - 0.5
-    );
-    this.resetFlow();
+    this.tempCategory = category;
+    document.getElementById("mode-modal").classList.add("active");
   }
 
   startMistakeMode() {
@@ -247,11 +264,8 @@ class LearningApp {
   resetFlow() {
     this.state.currentIdx = 0;
     this.state.history = [];
-
-    // Reset trạng thái background mỗi khi bắt đầu quiz mới
     this.sessionState = { currentStreak: 0, consecutiveWrong: 0 };
     this.setBgState("normal");
-
     this.navigate("quiz");
     this.loadStep();
   }
@@ -288,7 +302,37 @@ class LearningApp {
     }
   }
 
-  // --- MỚI 2: Logic xử lý câu trả lời tích hợp Nền Sống ---
+  updateMemoryStats(questionId, isCorrect) {
+    if (!this.stats.questionStats[questionId]) {
+      this.stats.questionStats[questionId] = {
+        wrong: 0,
+        correct: 0,
+        interval: 0,
+        nextReview: 0,
+      };
+    }
+
+    const stat = this.stats.questionStats[questionId];
+    const now = Date.now();
+    const ONE_DAY = 24 * 60 * 60 * 1000;
+
+    if (isCorrect) {
+      stat.correct++;
+      if (stat.interval === 0) stat.interval = 1;
+      else if (stat.interval === 1) stat.interval = 3;
+      else stat.interval = Math.round(stat.interval * 1.8);
+      stat.nextReview = now + stat.interval * ONE_DAY;
+    } else {
+      stat.wrong++;
+      stat.interval = 0;
+      stat.nextReview = now;
+      if (!this.stats.mistakeIds.includes(questionId)) {
+        this.stats.mistakeIds.push(questionId);
+      }
+    }
+    this.stats.questionStats[questionId] = stat;
+  }
+
   handleAnswer(idx, btnElement) {
     const q = this.state.questions[this.state.currentIdx];
     const isCorrect = idx === q.a;
@@ -304,6 +348,7 @@ class LearningApp {
       const cards = document.querySelectorAll(".option-card");
       cards.forEach((c) => (c.style.pointerEvents = "none"));
     }
+    this.updateMemoryStats(q.id, isCorrect);
 
     if (isCorrect) {
       btnElement.classList.add("correct");
@@ -319,7 +364,6 @@ class LearningApp {
         );
       }
 
-      // === LOGIC NỀN: ĐÚNG ===
       this.sessionState.currentStreak++;
       this.sessionState.consecutiveWrong = 0;
 
@@ -338,7 +382,6 @@ class LearningApp {
         this.stats.mistakeIds.push(q.id);
       }
 
-      // === LOGIC NỀN: SAI ===
       this.sessionState.consecutiveWrong++;
       this.sessionState.currentStreak = 0;
 
@@ -352,60 +395,44 @@ class LearningApp {
     this.stats.totalAnswered++;
     localStorage.setItem("mp_stats", JSON.stringify(this.stats));
 
-    // --- CẬP NHẬT LOGIC FEEDBACK MỚI ---
     if (this.ui.feedbackArea && this.ui.microHint) {
-      // 1. Reset class màu cũ
       this.ui.feedbackArea.classList.remove(
         "feedback-correct",
         "feedback-wrong"
       );
-
-      // 2. Thêm class màu mới dựa trên kết quả
       this.ui.feedbackArea.classList.add(
         isCorrect ? "feedback-correct" : "feedback-wrong"
       );
-
-      // 3. Render nội dung dạng hộp tin nhắn (Dễ đọc hơn)
       this.ui.microHint.innerHTML = `
             <div style="display: flex; align-items: start; gap: 12px;">
                 <div style="font-size: 1.6rem; line-height: 1;">${
                   isCorrect ? "🎉" : "💡"
                 }</div>
                 <div>
-                    <strong style="
-                        color: ${isCorrect ? "#10b981" : "#ef4444"}; 
-                        font-size: 1.1rem; 
-                        display: block; 
-                        margin-bottom: 4px;
-                    ">
+                    <strong style="color: ${
+                      isCorrect ? "#10b981" : "#ef4444"
+                    }; font-size: 1.1rem; display: block; margin-bottom: 4px;">
                         ${isCorrect ? "Tuyệt vời!" : "Đáp án đúng là:"}
                     </strong>
                     <span style="opacity: 0.95; font-size: 0.95rem;">${
                       q.explanation
                     }</span>
                 </div>
-            </div>
-        `;
+            </div>`;
     }
 
     if (this.ui.feedbackArea) {
       this.ui.feedbackArea.style.display = "block";
       this.ui.feedbackArea.scrollIntoView({ behavior: "smooth", block: "end" });
     }
+    this.playClickSound(isCorrect ? "correct" : "wrong");
   }
 
-  // --- MỚI 3: Hàm Helper đổi màu nền ---
   setBgState(state) {
     if (!this.bgElement) return;
-
-    // Xóa hết class trạng thái cũ
     this.bgElement.classList.remove("state-warm", "state-cold");
-
-    if (state === "warm") {
-      this.bgElement.classList.add("state-warm");
-    } else if (state === "cold") {
-      this.bgElement.classList.add("state-cold");
-    }
+    if (state === "warm") this.bgElement.classList.add("state-warm");
+    else if (state === "cold") this.bgElement.classList.add("state-cold");
   }
 
   nextStep() {
@@ -425,92 +452,76 @@ class LearningApp {
     }
   }
 
-  // --- MỚI 4: Hiệu ứng kết thúc ---
+  // --- END QUIZ: PHIÊN BẢN KNOWLEDGE GALAXY ---
   endQuiz() {
     const correctCount = this.state.history.filter((h) => h.isCorrect).length;
     const total = this.state.questions.length;
     const percentage = Math.round((correctCount / total) * 100);
+    const xpGained = correctCount * 10;
 
-    // 1. Xác định màu sắc & Lời nhắn
-    let color = "#e74c3c";
+    // 1. Logic danh hiệu
     let title = "Cố gắng hơn nhé! 💪";
-    let msg = "Thất bại là mẹ thành công.";
-
+    let msg = "Hành trình vạn dặm bắt đầu từ bước chân đầu tiên.";
     if (percentage >= 80) {
-      color = "#2ecc71";
       title = "Xuất sắc! 🌟";
-      msg = "Kiến thức của bạn rất vững chắc.";
+      msg = "Bạn đã làm chủ kiến thức này.";
     } else if (percentage >= 50) {
-      color = "#f1c40f";
       title = "Làm tốt lắm! 🔥";
       msg = "Bạn đang đi đúng hướng.";
     }
 
-    // 2. Xác định hành động cho nút LÀM LẠI (Fix lỗi không bấm được)
-    let retryAction = `app.startQuiz('${this.state.currentCategory}')`;
-    if (this.state.isMistakeMode) {
-      retryAction = `app.startMistakeMode()`;
-    }
-
-    // 3. Render
+    // 2. Render Layout Kết quả Mới
     const resultDiv = document.getElementById("result-content");
-    const mapHTML = this.state.history
-      .map(
-        (h, i) => `
-        <div class="node ${h.isCorrect ? "correct" : "wrong"}" title="Câu ${
-          i + 1
-        }">${i + 1}</div>
-    `
-      )
-      .join("");
 
     if (resultDiv) {
       resultDiv.innerHTML = `
             <div class="result-card">
-                <h2>${title}</h2>
-                <p style="margin-bottom: 25px; opacity: 0.8;">${msg}</p>
+                <h2 style="font-size: 2rem; margin-bottom: 5px;">${title}</h2>
+                <p style="opacity: 0.8; margin-bottom: 20px;">${msg}</p>
 
-                <div class="score-ring-container">
-                    <div class="score-ring" style="background: conic-gradient(${color} ${percentage}%, #e0e0e0 0%);"></div>
-                    <div class="score-text">
-                        <span class="score-percent">${percentage}%</span>
-                        <span class="score-label">Chính xác</span>
+                <div class="summary-grid">
+                    <div class="summary-card">
+                        <span class="summary-value" style="color: #2ecc71;">${percentage}%</span>
+                        <span class="summary-label">Chính xác</span>
+                    </div>
+                    <div class="summary-card">
+                        <span class="summary-value" style="color: #f1c40f;">+${xpGained}</span>
+                        <span class="summary-label">XP Kiếm được</span>
+                    </div>
+                    <div class="summary-card">
+                        <span class="summary-value" style="color: #e74c3c;">${this.stats.streak}🔥</span>
+                        <span class="summary-label">Streak</span>
                     </div>
                 </div>
 
-                <div class="result-stats-grid">
-                    <div class="result-stat-box">
-                        <span class="stat-val">+${correctCount * 10}</span>
-                        <span class="stat-lbl">XP Nhận được</span>
+                <div style="text-align: left; font-weight: 700; margin-bottom: 10px; color: var(--text-main);">
+                    <i class="fas fa-project-diagram"></i> Bản đồ kiến thức:
+                </div>
+                
+                <div class="knowledge-graph-wrapper" id="knowledge-graph">
+                    <svg class="graph-svg" id="graph-lines"></svg>
                     </div>
-                    <div class="result-stat-box">
-                        <span class="stat-val" style="color: ${color}">${correctCount}/${total}</span>
-                        <span class="stat-lbl">Câu đúng</span>
-                    </div>
-                </div>
 
-                <div style="text-align: left; margin-bottom: 5px; font-weight: 600; font-size: 0.9rem;">
-                    Bản đồ kết quả:
-                </div>
-                <div id="result-map-container" style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
-                    ${mapHTML}
-                </div>
-
-                <div class="action-group">
-                    <button class="mode-btn primary" onclick="app.navigate('dashboard')">
-                        <i class="fas fa-home"></i> Dashboard
+                <div style="margin-top: 25px;">
+                    <button class="hero-btn" onclick="app.startQuiz('${this.state.currentCategory}')">
+                        <i class="fas fa-redo-alt"></i> Bắt đầu nhịp thở mới
                     </button>
-                    <button class="mode-btn secondary" onclick="${retryAction}">
-                        <i class="fas fa-redo"></i> Làm lại
+                    
+                    <button class="mode-btn secondary" style="width: 100%; margin-top: 10px; border: none; background: transparent;" onclick="app.navigate('dashboard')">
+                        <i class="fas fa-arrow-left"></i> Quay về Dashboard
                     </button>
                 </div>
             </div>
         `;
+
+      // 3. Khởi tạo Graph sau khi HTML đã render
+      setTimeout(() => this.renderGalaxyGraph(), 50);
     }
 
     this.navigate("result");
     localStorage.setItem("mp_stats", JSON.stringify(this.stats));
 
+    // Hiệu ứng nền
     if (this.bgElement) {
       this.bgElement.classList.add("pulse-rankup");
       setTimeout(() => {
@@ -519,24 +530,89 @@ class LearningApp {
       }, 2000);
     }
   }
-  // --- LOGIC DARK MODE ---
+
+  // --- HÀM VẼ GRAPH (Pure JS Logic) ---
+  renderGalaxyGraph() {
+    const container = document.getElementById("knowledge-graph");
+    const svg = document.getElementById("graph-lines");
+    if (!container || !svg) return;
+
+    const width = container.offsetWidth;
+    const height = container.offsetHeight;
+    const history = this.state.history;
+    const totalNodes = history.length;
+
+    // Logic xếp vị trí: Dạng Sóng (Sine Wave) hoặc ZigZag để tạo đường dẫn
+    // Tạo padding 2 bên
+    const paddingX = 40;
+    const stepX = (width - paddingX * 2) / (totalNodes - 1);
+
+    let nodesHTML = "";
+    let linesHTML = "";
+
+    // Mảng lưu tọa độ để vẽ dây
+    const coords = [];
+
+    history.forEach((h, index) => {
+      // Tính toán tọa độ (X: đều nhau, Y: dao động sóng sin)
+      const x = paddingX + stepX * index;
+      // Tạo độ lệch ngẫu nhiên cho Y để trông tự nhiên hơn
+      const randomY = Math.sin(index) * 50;
+      const y = height / 2 + randomY;
+
+      coords.push({ x, y });
+
+      // 1. Tạo Node HTML
+      const isCorrect = h.isCorrect;
+      const qData = this.state.questions.find((q) => q.id === h.qId) || {
+        q: "Câu hỏi",
+        explanation: "...",
+      };
+
+      // Cắt ngắn câu hỏi cho tooltip
+      const shortQ =
+        qData.q.length > 50 ? qData.q.substring(0, 50) + "..." : qData.q;
+
+      nodesHTML += `
+            <div class="graph-node ${isCorrect ? "correct" : "wrong"}" 
+                 style="left: ${x - 18}px; top: ${y - 18}px;">
+                ${index + 1}
+                <div class="node-tooltip">
+                    <span class="tooltip-title">${
+                      isCorrect ? "Chính xác" : "Chưa đúng"
+                    }</span>
+                    ${shortQ}
+                </div>
+            </div>
+        `;
+
+      // 2. Tạo đường nối (Line) tới node trước đó
+      if (index > 0) {
+        const prev = coords[index - 1];
+        linesHTML += `
+                <line x1="${prev.x}" y1="${prev.y}" x2="${x}" y2="${y}" 
+                      class="connection-line" />
+            `;
+      }
+    });
+
+    // Inject vào DOM
+    svg.innerHTML = linesHTML;
+    // Thêm nodes vào sau svg (để đè lên lines)
+    container.insertAdjacentHTML("beforeend", nodesHTML);
+  }
+
   setupTheme() {
     const themeBtn = document.getElementById("theme-toggle");
     if (!themeBtn) return;
-
-    // 1. Kiểm tra LocalStorage xem user đã chọn dark mode chưa
     const isDark = localStorage.getItem("mp_theme") === "dark";
     if (isDark) {
       document.body.classList.add("dark-mode");
-      themeBtn.innerHTML = '<i class="fas fa-sun"></i>'; // Đổi icon thành mặt trời
+      themeBtn.innerHTML = '<i class="fas fa-sun"></i>';
     }
-
-    // 2. Bắt sự kiện click
     themeBtn.onclick = () => {
       document.body.classList.toggle("dark-mode");
       const isDarkModeNow = document.body.classList.contains("dark-mode");
-
-      // Đổi icon & Lưu vào bộ nhớ
       if (isDarkModeNow) {
         themeBtn.innerHTML = '<i class="fas fa-sun"></i>';
         localStorage.setItem("mp_theme", "dark");
@@ -546,16 +622,13 @@ class LearningApp {
       }
     };
   }
-  // --- SIDEBAR LOGIC ---
+
   toggleSidebar() {
     const sidebar = document.getElementById("app-sidebar");
     const overlay = document.getElementById("sidebar-overlay");
-
     if (sidebar && overlay) {
       sidebar.classList.toggle("active");
       overlay.classList.toggle("active");
-
-      // Cập nhật thông tin lên sidebar mỗi khi mở
       if (sidebar.classList.contains("active")) {
         this.updateSidebarInfo();
       }
@@ -565,29 +638,19 @@ class LearningApp {
   updateSidebarInfo() {
     const rankEl = document.getElementById("sidebar-rank");
     const xpEl = document.getElementById("sidebar-xp");
-
-    // Lấy Rank hiện tại (Copy logic từ renderDashboard hoặc tách hàm riêng)
-    // Để đơn giản, ta hiển thị XP trước
     if (xpEl) xpEl.innerText = `${this.stats.xp} XP`;
-
-    // Lấy tên Rank từ DOM của dashboard nếu có, hoặc tính lại
     const currentRankName = document.getElementById("rank-name")?.innerText;
     if (rankEl && currentRankName) rankEl.innerText = currentRankName;
   }
 
-  // --- TOOTHLESS MEME LOGIC (PHIÊN BẢN GIF TENOR + AUDIO) ---
-
   showToothlessMeme() {
     const overlay = document.getElementById("meme-overlay");
     const audio = document.getElementById("meme-audio");
-
     if (overlay) {
       overlay.classList.add("active");
-
-      // Nếu có thẻ audio thì bật nhạc
       if (audio) {
-        audio.currentTime = 0; // Tua lại từ đầu
-        audio.volume = 0.5; // Âm lượng vừa phải
+        audio.currentTime = 0;
+        audio.volume = 0.5;
         audio
           .play()
           .catch((e) => console.log("Trình duyệt chặn tự phát âm thanh"));
@@ -598,17 +661,127 @@ class LearningApp {
   closeToothlessMeme() {
     const overlay = document.getElementById("meme-overlay");
     const audio = document.getElementById("meme-audio");
-
     if (overlay) {
       overlay.classList.remove("active");
+      if (audio) audio.pause();
+    }
+  }
 
-      // Tắt nhạc ngay lập tức khi đóng
-      if (audio) {
-        audio.pause();
+  confirmStartQuiz(mode) {
+    document.getElementById("mode-modal").classList.remove("active");
+    this.state.currentCategory = this.tempCategory;
+    this.state.currentMode = mode;
+    this.state.isMistakeMode = false;
+
+    let questions = [...this.allData[this.tempCategory]];
+
+    if (mode === "recall") {
+      const now = Date.now();
+      questions = questions.filter((q) => {
+        const stat = this.stats.questionStats[q.id];
+        if (!stat) return true;
+        return stat.nextReview <= now;
+      });
+
+      if (questions.length === 0) {
+        alert("Bạn đã nhớ hết các câu hỏi của chủ đề này! Hãy quay lại sau.");
+        return;
+      }
+    }
+    this.state.questions = questions.sort(() => Math.random() - 0.5);
+    this.resetFlow();
+    this.applyModeUI(mode);
+  }
+
+  // --- FIX LỖI TIMER ---
+  applyModeUI(mode) {
+    const timerBadge = document.getElementById("timer");
+    const appContainer = document.getElementById("app-container");
+
+    if (appContainer) {
+      appContainer.classList.remove("focus-mode");
+    }
+
+    // CHỈ THỰC HIỆN NẾU TÌM THẤY ELEMENT TIMER
+    if (timerBadge) {
+      timerBadge.style.display = "block";
+      if (mode === "speed") {
+        timerBadge.innerText = "5s 🔥";
+        timerBadge.style.background = "#e74c3c";
+      } else if (mode === "focus") {
+        timerBadge.style.display = "none";
+      } else {
+        timerBadge.innerText = "15s";
+        timerBadge.style.background = "#ff9f43";
       }
     }
   }
+  // Thêm vào main.js
+  playClickSound(type) {
+    // Tạo context âm thanh (Web Audio API) hoặc dùng file mp3 ngắn
+    // Cách đơn giản nhất:
+    const audio = new Audio();
+    if (type === "correct") audio.src = "path/to/correct.mp3"; // Tiếng "Ding"
+    else if (type === "wrong") audio.src = "path/to/wrong.mp3"; // Tiếng "Buzz"
+    else audio.src = "path/to/click.mp3"; // Tiếng "Pop" nhẹ
+
+    audio.volume = 0.5;
+    audio.play().catch((e) => {}); // Bỏ qua lỗi nếu trình duyệt chặn
+  }
+
+  // Thêm method này vào trong class LearningApp
+
+  setupTheme() {
+    const themeBtn = document.getElementById("theme-toggle");
+    const body = document.body;
+    const icon = themeBtn.querySelector("i");
+
+    // 1. Hàm cập nhật Icon
+    const updateIcon = (isDark) => {
+      if (isDark) {
+        icon.classList.remove("fa-moon");
+        icon.classList.add("fa-sun");
+      } else {
+        icon.classList.remove("fa-sun");
+        icon.classList.add("fa-moon");
+      }
+    };
+
+    // 2. Logic kiểm tra ban đầu (Ưu tiên LocalStorage -> System Pref)
+    const savedTheme = localStorage.getItem("quiz_theme");
+    const systemPrefersDark = window.matchMedia(
+      "(prefers-color-scheme: dark)"
+    ).matches;
+
+    if (savedTheme === "dark" || (!savedTheme && systemPrefersDark)) {
+      body.classList.add("dark-mode");
+      updateIcon(true);
+    } else {
+      updateIcon(false);
+    }
+
+    // 3. Sự kiện Click Toggle
+    themeBtn.addEventListener("click", () => {
+      // Toggle class
+      body.classList.toggle("dark-mode");
+      const isDark = body.classList.contains("dark-mode");
+
+      // Animation xoay nhẹ icon khi click
+      themeBtn.style.transform = "scale(0.8) rotate(180deg)";
+      setTimeout(() => {
+        themeBtn.style.transform = "";
+        updateIcon(isDark);
+      }, 200);
+
+      // Lưu vào LocalStorage
+      localStorage.setItem("quiz_theme", isDark ? "dark" : "light");
+
+      // (Tùy chọn) Phát âm thanh click nhẹ
+      // this.playClickSound('click');
+    });
+  }
+
+  // Đừng quên gọi this.setupTheme() trong constructor hoặc hàm init() nhé!
 }
 
-// Khởi tạo ứng dụng
 const app = new LearningApp(quizData);
