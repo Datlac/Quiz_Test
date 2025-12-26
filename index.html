@@ -3,46 +3,86 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Learning Flow - Trải nghiệm học tập đỉnh cao</title>
+    <title>MindPath Flow - Master Your Knowledge</title>
     <link rel="stylesheet" href="style.css" />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;800&display=swap"
       rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css"
     />
   </head>
   <body>
     <div class="bg-glow"></div>
 
+    <nav class="navbar">
+      <div class="logo">MindPath</div>
+      <div class="nav-links">
+        <button id="theme-toggle" class="nav-btn">
+          <i class="fas fa-moon"></i>
+        </button>
+        <button onclick="location.reload()" class="nav-btn">
+          <i class="fas fa-home"></i>
+        </button>
+      </div>
+    </nav>
+
     <div id="app-container">
-      <div class="progress-wrapper">
-        <div id="progress-track">
-          <div id="progress-glow"></div>
-        </div>
+      <div id="start-screen" class="glass-card">
+        <h2>Chào mừng trở lại! 👋</h2>
+        <p>Chọn chủ đề để kích hoạt trạng thái "Flow"</p>
+
+        <div id="category-list" class="mode-selector"></div>
+
+        <button
+          id="mistake-btn"
+          class="mode-btn secondary"
+          style="display: none"
+          onclick="app.startMistakeMode()"
+        >
+          <i class="fas fa-brain"></i> Ôn lại kiến thức hổng
+        </button>
       </div>
 
-      <main id="quiz-flow" class="glass-card">
-        <div id="question-scene">
-          <div id="micro-hint" class="hint-text"></div>
-          <h2 id="question-text">Đang khởi tạo dòng chảy học tập...</h2>
-          <div id="options-grid"></div>
+      <main id="quiz-flow" class="glass-card" style="display: none">
+        <div class="quiz-header">
+          <div class="timer-badge">
+            <i class="fas fa-clock"></i> <span id="timer">15</span>s
+          </div>
+          <div class="progress-wrapper">
+            <div id="progress-track">
+              <div id="progress-glow"></div>
+            </div>
+          </div>
         </div>
 
-        <div id="review-scene" style="display: none">
-          <h3>Bản đồ kiến thức của bạn</h3>
-          <div id="knowledge-map"></div>
-          <div id="mistake-analysis"></div>
-          <button class="action-btn" onclick="location.reload()">
-            Bắt đầu nhịp thở mới
-          </button>
+        <div id="question-scene">
+          <div id="micro-hint" class="hint-text"></div>
+          <h2 id="question-text">Loading...</h2>
+          <div id="options-grid"></div>
         </div>
       </main>
 
+      <div id="review-scene" class="glass-card" style="display: none"></div>
+
       <footer class="learning-stats">
-        <span id="streak-info">🔥 3 ngày liên tiếp</span>
-        <span id="xp-info">✨ 150 XP</span>
+        <span id="streak-info">🔥 Streak: 0</span>
+        <span id="xp-info">✨ 0 XP</span>
       </footer>
     </div>
 
+    <audio
+      id="sound-correct"
+      src="https://assets.mixkit.co/sfx/preview/mixkit-arcade-score-interface-217.mp3"
+    ></audio>
+    <audio
+      id="sound-wrong"
+      src="https://assets.mixkit.co/sfx/preview/mixkit-wrong-answer-fail-notification-946.mp3"
+    ></audio>
+
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
     <script src="question.js"></script>
     <script src="main.js"></script>
   </body>

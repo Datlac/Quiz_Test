@@ -1,138 +1,254 @@
-class LearningFlowApp {
+class LearningApp {
   constructor(data) {
-    this.questions = data;
-    this.currentIdx = 0;
-    this.history = [];
-    this.xp = 150;
-    this.currentStreak = 0;
-    this.streakThreshold = 3;
-
-    this.ui = {
-      text: document.getElementById("question-text"),
-      grid: document.getElementById("options-grid"),
-      hint: document.getElementById("micro-hint"),
-      progress: document.getElementById("progress-glow"),
-      xpInfo: document.getElementById("xp-info"),
-      streakInfo: document.getElementById("streak-info"),
-      scenes: {
-        quiz: document.getElementById("question-scene"),
-        review: document.getElementById("review-scene"),
-      },
+    this.allData = data;
+    // Lấy stats từ LocalStorage hoặc khởi tạo mới
+    this.stats = JSON.parse(localStorage.getItem("mp_stats")) || {
+      xp: 0,
+      mistakeIds: [],
+      streak: 0,
     };
 
-    this.createStreakUI();
-    this.loadStep();
+    this.state = {
+      currentIdx: 0,
+      questions: [],
+      history: [], // Lưu kết quả từng câu
+      timer: null,
+      timeLeft: 15,
+      isAnswered: false, // Chống click nhiều lần
+    };
+
+    this.ui = {
+      themeBtn: document.getElementById("theme-toggle"),
+      timerDisplay: document.getElementById("timer"),
+      categoryList: document.getElementById("category-list"),
+    };
+
+    this.init();
   }
 
-  createStreakUI() {
-    const badge = document.createElement("div");
-    badge.id = "streak-badge";
-    badge.className = "streak-badge";
-    document.querySelector(".glass-card").appendChild(badge);
-    this.ui.streakBadge = badge;
-  }
+  init() {
+    this.renderStats();
+    this.setupCategories();
+    this.checkMistakes();
 
-  loadStep() {
-    const q = this.questions[this.currentIdx];
-
-    // 5. Tập trung tuyệt đối: Xóa bỏ các yếu tố gây nhiễu
-    this.ui.grid.innerHTML = "";
-    this.ui.hint.innerHTML = "";
-    this.ui.text.innerText = q.q;
-
-    // 2. Thanh tiến trình mờ (không số)
-    this.ui.progress.style.width = `${
-      (this.currentIdx / this.questions.length) * 100
-    }%`;
-
-    q.options.forEach((opt, i) => {
-      const btn = document.createElement("div");
-      btn.className = "option-card";
-      btn.innerText = opt;
-      btn.onclick = () => this.handleDecision(i);
-      this.ui.grid.appendChild(btn);
+    // Dark mode logic
+    this.ui.themeBtn.addEventListener("click", () => {
+      document.body.classList.toggle("dark-mode");
+      const icon = this.ui.themeBtn.querySelector("i");
+      icon.classList.toggle("fa-moon");
+      icon.classList.toggle("fa-sun");
     });
   }
 
-  handleDecision(index) {
-    const q = this.questions[this.currentIdx];
-    const isCorrect = index === q.a;
-    const cards = this.ui.grid.querySelectorAll(".option-card");
+  setupCategories() {
+    // Tự động tạo nút dựa trên dữ liệu
+    Object.keys(this.allData).forEach((key) => {
+      const btn = document.createElement("button");
+      btn.className = "mode-btn";
+      btn.innerHTML = `🚀 ${key.toUpperCase()}`;
+      btn.onclick = () => this.startQuiz(key);
+      this.ui.categoryList.appendChild(btn);
+    });
+  }
 
+  checkMistakes() {
+    if (this.stats.mistakeIds.length > 0) {
+      document.getElementById("mistake-btn").style.display = "block";
+    }
+  }
+
+  startQuiz(category) {
+    // Shuffle câu hỏi
+    this.state.questions = [...this.allData[category]].sort(
+      () => Math.random() - 0.5
+    );
+    this.resetQuizState();
+  }
+
+  startMistakeMode() {
+    const allQuestions = Object.values(this.allData).flat();
+    this.state.questions = allQuestions.filter((q) =>
+      this.stats.mistakeIds.includes(q.id)
+    );
+
+    if (this.state.questions.length === 0) {
+      alert("Bạn đã khắc phục hết lỗi sai! Tuyệt vời!");
+      this.stats.mistakeIds = [];
+      localStorage.setItem("mp_stats", JSON.stringify(this.stats));
+      location.reload();
+      return;
+    }
+    this.resetQuizState();
+  }
+
+  resetQuizState() {
+    this.state.currentIdx = 0;
+    this.state.history = [];
+    this.showScreen("quiz-flow");
+    this.loadStep();
+  }
+
+  loadStep() {
+    const q = this.state.questions[this.state.currentIdx];
+    this.state.isAnswered = false;
+
+    // UI Reset
+    document.getElementById("question-text").innerText = q.q;
+    document.getElementById("micro-hint").innerHTML = "";
+    const grid = document.getElementById("options-grid");
+    grid.innerHTML = "";
+
+    // Render Options
+    q.options.forEach((opt, i) => {
+      const btn = document.createElement("button");
+      btn.className = "option-card";
+      btn.innerText = opt;
+      btn.onclick = () => this.handleAnswer(i, btn);
+      grid.appendChild(btn);
+    });
+
+    this.updateProgress();
+    this.startTimer();
+  }
+
+  startTimer() {
+    clearInterval(this.state.timer);
+    this.state.timeLeft = 15; // 15 giây mỗi câu
+    this.ui.timerDisplay.innerText = this.state.timeLeft;
+
+    this.state.timer = setInterval(() => {
+      this.state.timeLeft--;
+      this.ui.timerDisplay.innerText = this.state.timeLeft;
+      if (this.state.timeLeft <= 0) {
+        this.handleTimeout();
+      }
+    }, 1000);
+  }
+
+  handleTimeout() {
+    this.handleAnswer(-1, null); // -1 là sai do hết giờ
+  }
+
+  playSound(type) {
+    const sound = document.getElementById(
+      type === "correct" ? "sound-correct" : "sound-wrong"
+    );
+    if (sound) {
+      sound.currentTime = 0;
+      sound.play().catch((e) => console.log("Audio require interaction"));
+    }
+  }
+
+  handleAnswer(idx, btnElement) {
+    if (this.state.isAnswered) return;
+    this.state.isAnswered = true;
+    clearInterval(this.state.timer);
+
+    const q = this.state.questions[this.state.currentIdx];
+    const isCorrect = idx === q.a;
+
+    // Lưu lịch sử
+    this.state.history.push(isCorrect);
+    const cards = document.querySelectorAll(".option-card");
     cards.forEach((c) => (c.style.pointerEvents = "none"));
 
-    // 7. Phản hồi màu sắc có kiểm soát
     if (isCorrect) {
-      cards[index].classList.add("correct");
-      this.ui.hint.innerHTML = `<p style="color: var(--success-soft)"><b>Chính xác!</b> ${q.feedbackOk}</p>`;
+      this.playSound("correct");
+      confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
+      this.stats.xp += 10;
+      if (btnElement) btnElement.classList.add("correct");
+
+      // Xóa khỏi danh sách lỗi nếu làm đúng (Optional)
+      this.stats.mistakeIds = this.stats.mistakeIds.filter((id) => id !== q.id);
     } else {
-      cards[index].classList.add("wrong");
-      cards[q.a].classList.add("correct");
-      this.ui.hint.innerHTML = `<p style="color: var(--error-soft)"><b>Gợi ý:</b> ${q.feedbackFail}</p>`;
+      this.playSound("wrong");
+      if (btnElement) btnElement.classList.add("wrong");
+      // Highlight câu đúng
+      if (cards[q.a]) cards[q.a].classList.add("correct");
+
+      if (!this.stats.mistakeIds.includes(q.id)) {
+        this.stats.mistakeIds.push(q.id);
+      }
     }
 
-    // 6. Nút hành động rõ ràng & nhất quán
-    const controls = document.createElement("div");
-    controls.style.marginTop = "30px";
+    // Lưu stats
+    localStorage.setItem("mp_stats", JSON.stringify(this.stats));
+    this.renderStats();
 
-    const nextBtn = document.createElement("button");
-    nextBtn.className = "action-btn primary-btn";
-    nextBtn.innerText =
-      this.currentIdx === this.questions.length - 1
-        ? "Xem kết quả"
-        : "Tiếp theo";
-    nextBtn.onclick = () => this.goToNext();
+    // Hiển thị giải thích
+    document.getElementById("micro-hint").innerHTML = `
+            <div class="${isCorrect ? "text-green" : "text-red"}">
+                <b>${isCorrect ? "CHÍNH XÁC! 🎉" : "TIẾC QUÁ! 😅"}</b><br>
+                ${q.explanation}
+            </div>
+        `;
 
-    controls.appendChild(nextBtn);
-    this.ui.grid.appendChild(controls);
+    setTimeout(() => {
+      this.state.currentIdx++;
+      if (this.state.currentIdx < this.state.questions.length) {
+        this.loadStep();
+      } else {
+        this.endQuiz();
+      }
+    }, 2500); // Đợi 2.5s để đọc giải thích
   }
 
-  goToNext() {
-    this.currentIdx++;
-    if (this.currentIdx < this.questions.length) {
-      this.loadStep();
-    } else {
-      this.showKnowledgeMap();
-    }
+  updateProgress() {
+    const p = (this.state.currentIdx / this.state.questions.length) * 100;
+    document.getElementById("progress-glow").style.width = p + "%";
   }
 
-  updateStats() {
-    this.ui.xpInfo.innerText = `✨ ${this.xp} XP`;
-    this.ui.streakInfo.innerText = `🔥 ${this.currentStreak} Câu đúng`;
+  renderStats() {
+    document.getElementById("xp-info").innerText = `✨ ${this.stats.xp} XP`;
+    // Có thể thêm logic tính streak ở đây
   }
 
-  showKnowledgeMap() {
-    this.ui.scenes.quiz.style.display = "none";
-    this.ui.scenes.review.style.display = "block";
+  showScreen(id) {
+    document
+      .querySelectorAll("#app-container > div, #app-container > main")
+      .forEach((el) => (el.style.display = "none"));
+    document.getElementById(id).style.display = "block";
+  }
 
-    // 3. Màn hình kết thúc: Tổng kết điểm
-    const correctCount = this.history.filter((h) => h.isCorrect).length;
-    const summaryText =
-      correctCount > this.questions.length / 2
-        ? "🌟 Tuyệt vời! Bạn đã nắm vững kiến thức."
-        : "📘 Cố gắng lên! Hãy xem lại các câu sai nhé.";
+  endQuiz() {
+    this.showScreen("review-scene");
+    const total = this.state.questions.length;
+    const correctCount = this.state.history.filter(Boolean).length;
+    const percentage = Math.round((correctCount / total) * 100);
 
-    document.getElementById(
-      "mistake-analysis"
-    ).innerHTML = `<h4>${summaryText}</h4><p>Bạn đúng ${correctCount}/${this.questions.length} câu.</p>`;
+    const reviewScene = document.getElementById("review-scene");
+    reviewScene.innerHTML = `
+            <div class="result-card">
+                <div class="result-header">
+                    <h2>${
+                      percentage >= 80 ? "Xuất sắc! 🌟" : "Hoàn thành! 🏁"
+                    }</h2>
+                    <p>Bạn đã trả lời đúng ${correctCount}/${total} câu</p>
+                </div>
+                
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <span class="label">XP Nhận được</span><br>
+                        <span class="value">+${correctCount * 10}</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="label">Độ chính xác</span><br>
+                        <span class="value">${percentage}%</span>
+                    </div>
+                </div>
 
-    // 4. Review Mode: Click vào node để xem lại chi tiết
-    const mapContainer = document.getElementById("knowledge-map");
-    mapContainer.innerHTML = this.history
-      .map(
-        (h, i) => `
-        <div class="node ${
-          h.isCorrect ? "correct" : "wrong"
-        }" onclick="alert('Câu hỏi: ${h.question}\\nBạn chọn: ${
-          h.selected
-        }\\nĐáp án đúng: ${h.correct}')">
-            <span>${i + 1}</span>
-            <small>${h.tag}</small>
-        </div>
-    `
-      )
-      .join("");
+                <div class="action-group">
+                    <button class="mode-btn" onclick="location.reload()">🏠 Trang chủ</button>
+                    ${
+                      this.stats.mistakeIds.length > 0
+                        ? `<button class="mode-btn secondary" onclick="app.startMistakeMode()">🧠 Khắc phục ${this.stats.mistakeIds.length} lỗi sai</button>`
+                        : ""
+                    }
+                </div>
+            </div>
+        `;
   }
 }
 
-const app = new LearningFlowApp(quizBank);
+// Khởi tạo ứng dụng
+const app = new LearningApp(quizData);
