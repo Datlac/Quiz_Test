@@ -1546,3 +1546,132 @@ body.dark-mode .node-tooltip {
 body.dark-mode .node-tooltip::after {
   border-color: #1e293b transparent transparent transparent;
 }
+/* --- BỔ SUNG: DASHBOARD COMPONENTS (FIX LỖI GIAO DIỆN) --- */
+
+/* 1. User Greeting & Badge */
+.welcome-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: 20px;
+}
+.welcome-header h1 {
+  font-size: 1.8rem;
+  font-weight: 800;
+  line-height: 1.2;
+  margin: 0;
+  background: linear-gradient(90deg, var(--text-main) 0%, var(--text-sub) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+body.dark-mode .welcome-header h1 {
+  background: linear-gradient(90deg, #fff 0%, #cbd5e1 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.user-badge {
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid var(--glass-border);
+  padding: 8px 16px 8px 8px;
+  border-radius: 50px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+.user-badge:hover {
+  transform: scale(1.05);
+  background: var(--glass-bg);
+}
+body.dark-mode .user-badge {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.avatar {
+  width: 40px;
+  height: 40px;
+  background: var(--primary-grad);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.2rem;
+}
+
+/* 2. Streak Bar Mini */
+.streak-bar-mini {
+  margin-top: 15px;
+  background: rgba(255, 255, 255, 0.3);
+  border: 1px solid var(--glass-border);
+  padding: 10px 20px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.9rem;
+}
+body.dark-mode .streak-bar-mini {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* 3. Mistake Hero Banner (Cảnh báo lỗi) */
+.mistake-hero {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 118, 117, 0.15),
+    rgba(214, 48, 49, 0.05)
+  );
+  border: 1px solid rgba(255, 118, 117, 0.4);
+  border-radius: 20px;
+  padding: 20px;
+  margin-bottom: 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 15px;
+  animation: fadeUp 0.4s ease;
+}
+.mistake-content {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+.mistake-icon-box {
+  width: 48px;
+  height: 48px;
+  background: #ff7675;
+  color: white;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  box-shadow: 0 5px 15px rgba(255, 118, 117, 0.3);
+}
+.review-btn {
+  background: #d63031;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: transform 0.2s;
+}
+.review-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 5px 15px rgba(214, 48, 49, 0.3);
+}
+
+/* 4. Fix cho Course Card trong Grid */
+.course-card {
+  /* Đảm bảo nội dung bên trong card không bị dính */
+  justify-content: space-between;
+}

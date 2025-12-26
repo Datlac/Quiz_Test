@@ -1,21 +1,17 @@
-// --- CẤU HÌNH RANK SYSTEM (GIAI ĐOẠN 2: FULL PATH) ---
+// --- CONFIGURATION ---
+const STORAGE_KEY = "mindpath_v1_stats"; // Đổi key mới để clean dữ liệu rác cũ
 const RANK_SYSTEM = [
-  // Giai đoạn Tân thủ
   { name: "Bronze", min: 0, max: 300, color: "#cd7f32" },
   { name: "Silver", min: 300, max: 800, color: "#bdc3c7" },
   { name: "Gold", min: 800, max: 1500, color: "#f1c40f" },
-
-  // Giai đoạn Cao thủ (User cam kết)
   { name: "Platinum", min: 1500, max: 2500, color: "#00cec9" },
   { name: "Master", min: 2500, max: 4000, color: "#9b59b6" },
   { name: "Grandmaster", min: 4000, max: 6000, color: "#d63031" },
-
-  // Giai đoạn Huyền thoại (End Game)
   { name: "Challenger", min: 6000, max: 9000, color: "#e84393" },
-  { name: "Immortal", min: 9000, max: 13000, color: "#fdcb6e" },
-  { name: "Apex", min: 13000, max: 99999, color: "#2d3436" },
+  { name: "Apex", min: 9000, max: 99999, color: "#2d3436" },
 ];
 
+// --- HELPER FUNCTIONS ---
 function getRankByXP(xp) {
   return (
     RANK_SYSTEM.find((r) => xp >= r.min && xp < r.max) ||
@@ -23,644 +19,148 @@ function getRankByXP(xp) {
   );
 }
 
-function getNextRank(currentRank) {
-  const idx = RANK_SYSTEM.indexOf(currentRank);
-  if (idx >= 0 && idx < RANK_SYSTEM.length - 1) {
-    return RANK_SYSTEM[idx + 1];
-  }
-  return null;
+function createRipple(event) {
+  const button = event.currentTarget;
+  const circle = document.createElement("span");
+  const diameter = Math.max(button.clientWidth, button.clientHeight);
+  const radius = diameter / 2;
+  const rect = button.getBoundingClientRect();
+  circle.style.width = circle.style.height = `${diameter}px`;
+  circle.style.left = `${event.clientX - rect.left - radius}px`;
+  circle.style.top = `${event.clientY - rect.top - radius}px`;
+  circle.classList.add("ripple");
+  const ripple = button.getElementsByClassName("ripple")[0];
+  if (ripple) ripple.remove();
+  button.appendChild(circle);
 }
 
+// --- MAIN APP CLASS ---
 class LearningApp {
   constructor(data) {
     this.allData = data;
-    this.stats = JSON.parse(localStorage.getItem("mp_stats")) || {
-      xp: 0,
-      mistakeIds: [],
-      streak: 0,
-      lastLogin: null,
-      questionStats: {},
-      mistakeIds: [],
-      completedLessons: [],
-    };
 
-    // --- FIX DỮ LIỆU CŨ ---
-    if (!this.stats.questionStats) {
-      this.stats.questionStats = {};
-    }
-    if (!this.stats.mistakeIds) this.stats.mistakeIds = [];
-    if (typeof this.stats.xp !== "number") this.stats.xp = 0;
-    // ----------------------
+    // 1. Safe Storage Loading
+    this.stats = this.loadStats();
 
+    // 2. State Initialization
     this.state = {
       currentIdx: 0,
       questions: [],
       history: [],
       isMistakeMode: false,
+      currentCategory: null,
     };
 
-    this.sessionState = {
-      currentStreak: 0,
-      consecutiveWrong: 0,
-    };
-    this.bgElement = document.getElementById("living-bg");
-
-    this.screens = {
-      landing: document.getElementById("view-landing"),
-      dashboard: document.getElementById("view-dashboard"),
-      quiz: document.getElementById("view-quiz"),
-      result: document.getElementById("view-result"),
-    };
-
+    // 3. UI References
     this.ui = {
-      questionText: document.getElementById("question-text"),
-      optionsGrid: document.getElementById("options-grid"),
-      feedbackArea: document.getElementById("feedback-area"),
-      microHint: document.getElementById("micro-hint"),
-      progressText: document.getElementById("progress-text"),
-      nextBtn: document.getElementById("next-btn"),
+      screens: {
+        landing: document.getElementById("view-landing"),
+        dashboard: document.getElementById("view-dashboard"),
+        quiz: document.getElementById("view-quiz"),
+        result: document.getElementById("view-result"),
+      },
+      quiz: {
+        questionText: document.getElementById("question-text"),
+        optionsGrid: document.getElementById("options-grid"),
+        feedbackArea: document.getElementById("feedback-area"),
+        microHint: document.getElementById("micro-hint"),
+        progressGlow: document.getElementById("progress-glow"),
+        timer: document.getElementById("timer"),
+      },
     };
 
     this.init();
     this.setupTheme();
   }
 
+  // --- CORE: STORAGE ---
+  loadStats() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) return JSON.parse(raw);
+    } catch (e) {
+      console.error("Storage corrupted, resetting...", e);
+    }
+    // Default Data
+    return {
+      xp: 0,
+      streak: 0,
+      lastLogin: null,
+      questionStats: {}, // { id: { wrong: 0, correct: 0, nextReview: timestamp } }
+      mistakeIds: [],
+    };
+  }
+
+  saveStats() {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.stats));
+    } catch (e) {
+      console.error("Save failed", e);
+    }
+  }
+
+  resetProgress() {
+    if (
+      confirm(
+        "Bạn có chắc chắn muốn xóa toàn bộ tiến độ không? Hành động này không thể hoàn tác."
+      )
+    ) {
+      localStorage.removeItem(STORAGE_KEY);
+      location.reload();
+    }
+  }
+
+  // --- CORE: NAVIGATION ---
   init() {
+    // Check login logic (Giả lập)
     if (this.stats.lastLogin) {
       this.navigate("dashboard");
     } else {
       this.navigate("landing");
     }
-    this.updateStreak();
+    this.attachGlobalEvents();
+  }
+
+  attachGlobalEvents() {
+    // Gắn ripple effect cho các nút tĩnh
+    document.querySelectorAll(".hero-btn, .nav-btn").forEach((btn) => {
+      btn.addEventListener("click", createRipple);
+    });
   }
 
   navigate(screenName) {
-    Object.values(this.screens).forEach((el) => {
+    Object.values(this.ui.screens).forEach((el) => {
       if (el) el.style.display = "none";
     });
-
-    if (this.screens[screenName]) {
-      this.screens[screenName].style.display = "block";
+    if (this.ui.screens[screenName]) {
+      this.ui.screens[screenName].style.display = "block";
     }
 
-    if (screenName === "dashboard") {
-      const dashboardBtn = document.getElementById("dashboard-btn");
-      if (dashboardBtn) dashboardBtn.style.display = "block";
-      this.renderDashboard();
-    } else if (screenName === "landing") {
-      const dashboardBtn = document.getElementById("dashboard-btn");
-      if (dashboardBtn) dashboardBtn.style.display = "none";
-    }
+    // Toggle Dashboard Btn
+    const dashBtn = document.getElementById("dashboard-btn");
+    if (dashBtn)
+      dashBtn.style.display = screenName === "landing" ? "none" : "block";
+
+    if (screenName === "dashboard") this.renderDashboard();
   }
 
   enterApp() {
     this.stats.lastLogin = new Date().toISOString();
-    localStorage.setItem("mp_stats", JSON.stringify(this.stats));
+    this.saveStats();
     this.navigate("dashboard");
-  }
-
-  // --- CẬP NHẬT RENDER DASHBOARD (GIAO DIỆN LEARNING HUB) ---
-  // --- REDESIGN: DASHBOARD LEARNING HUB ---
-  renderDashboard() {
-    // 1. DATA CHUẨN BỊ
-    const hour = new Date().getHours();
-    let greeting = "Chào buổi sáng";
-    if (hour >= 12 && hour < 18) greeting = "Chào buổi chiều";
-    else if (hour >= 18) greeting = "Chào buổi tối";
-
-    const currentXP = this.stats.xp;
-    const currentRank = getRankByXP(currentXP);
-
-    // 2. RENDER HEADER (Greeting + Mini Stats)
-    const headerEl = document.getElementById("dashboard-header");
-    if (headerEl) {
-      headerEl.innerHTML = `
-            <div class="welcome-row">
-                <div class="greeting-col">
-                    <span class="sub-greet">${new Date().toLocaleDateString(
-                      "vi-VN",
-                      { weekday: "long", day: "numeric", month: "long" }
-                    )}</span>
-                    <h1>${greeting}, Learner!</h1>
-                </div>
-                <div class="user-badge" onclick="app.toggleSidebar()">
-                    <div class="avatar-circle">
-                        <i class="fas fa-user-astronaut"></i>
-                    </div>
-                    <div class="badge-info">
-                        <span class="rank-name" style="color: ${
-                          currentRank.color
-                        }">${currentRank.name}</span>
-                        <span class="xp-count">${currentXP} XP</span>
-                    </div>
-                </div>
-            </div>
-            
-            <div class="streak-bar-mini">
-                <div class="fire-icon ${this.stats.streak > 0 ? "active" : ""}">
-                    <i class="fas fa-fire"></i>
-                </div>
-                <div class="streak-info">
-                    <strong>${this.stats.streak} Ngày Streak</strong>
-                    <span>Giữ lửa học tập nhé! 🔥</span>
-                </div>
-            </div>
-        `;
-    }
-
-    // 3. RENDER MISTAKE HERO (Nút ôn tập nổi bật)
-    const mistakeBanner = document.getElementById("mistake-alert");
-    const allStats = Object.entries(this.stats.questionStats);
-    const weakQuestions = allStats.filter(([id, s]) => s.wrong > 0);
-
-    if (mistakeBanner) {
-      if (weakQuestions.length > 0) {
-        mistakeBanner.className = "mistake-hero";
-        mistakeBanner.style.display = "flex";
-        mistakeBanner.innerHTML = `
-                <div class="mistake-content">
-                    <div class="mistake-icon-box">
-                        <i class="fas fa-tools"></i>
-                    </div>
-                    <div>
-                        <h4>Cần bảo trì kiến thức!</h4>
-                        <p>Bạn đang hổng <strong style="color: #e17055">${weakQuestions.length} câu hỏi</strong>. Trám lại ngay nào.</p>
-                    </div>
-                </div>
-                <button class="review-btn" onclick="app.startMistakeMode()">
-                    Sửa lỗi ngay <i class="fas fa-arrow-right"></i>
-                </button>
-            `;
-      } else {
-        mistakeBanner.style.display = "none";
-      }
-    }
-
-    // 4. RENDER COURSE CARDS (Lưới bài học hiện đại)
-    const pathContainer = document.getElementById("path-container");
-    if (pathContainer) {
-      pathContainer.innerHTML = "";
-
-      Object.keys(this.allData).forEach((key) => {
-        const count = this.allData[key].length;
-
-        // Cấu hình giao diện cho từng môn
-        let config = { icon: "fa-book-open", color: "blue", label: "General" };
-
-        if (key.toLowerCase().includes("hci")) {
-          config = {
-            icon: "fa-laptop-code",
-            color: "purple",
-            label: "UX & Design",
-          };
-        } else if (
-          key.toLowerCase().includes("english") ||
-          key.toLowerCase().includes("tiếng anh")
-        ) {
-          config = { icon: "fa-language", color: "green", label: "Language" };
-        } else if (
-          key.toLowerCase().includes("history") ||
-          key.toLowerCase().includes("lịch sử")
-        ) {
-          config = { icon: "fa-landmark", color: "orange", label: "History" };
-        }
-
-        const card = document.createElement("div");
-        card.className = `course-card grad-${config.color}`;
-        card.onclick = () => this.startQuiz(key);
-
-        // Progress giả lập (Bạn có thể thay bằng logic thật nếu đã lưu completedLessons)
-        // Ví dụ: Random progress để demo giao diện
-        const progressPercent = Math.floor(Math.random() * 30) + 10;
-
-        card.innerHTML = `
-            <div class="card-bg-blob"></div>
-            <div class="card-header">
-                <div class="card-icon">
-                    <i class="fas ${config.icon}"></i>
-                </div>
-                <div class="card-arrow">
-                    <i class="fas fa-chevron-right"></i>
-                </div>
-            </div>
-            
-            <div class="card-body">
-                <span class="card-tag">${config.label}</span>
-                <h3>${key.toUpperCase()}</h3>
-                
-                <div class="card-meta">
-                    <span><i class="fas fa-layer-group"></i> ${count} Câu</span>
-                    <span><i class="fas fa-clock"></i> ~${Math.ceil(
-                      count * 0.5
-                    )}p</span>
-                </div>
-            </div>
-
-            <div class="card-progress">
-                <div class="progress-bar" style="width: ${progressPercent}%"></div>
-            </div>
-        `;
-        pathContainer.appendChild(card);
-      });
-    }
-  }
-
-  updateStreak() {
-    const streakEl = document.getElementById("dash-streak");
-    if (streakEl) streakEl.innerText = this.stats.streak;
-  }
-
-  startQuiz(category) {
-    this.tempCategory = category;
-    document.getElementById("mode-modal").classList.add("active");
-  }
-
-  startMistakeMode() {
-    this.state.isMistakeMode = true;
-    const allQuestions = Object.values(this.allData).flat();
-    this.state.questions = allQuestions.filter((q) =>
-      this.stats.mistakeIds.includes(q.id)
-    );
-    this.resetFlow();
-  }
-
-  resetFlow() {
-    this.state.currentIdx = 0;
-    this.state.history = [];
-    this.sessionState = { currentStreak: 0, consecutiveWrong: 0 };
-    this.setBgState("normal");
-    this.navigate("quiz");
-    this.loadStep();
-  }
-
-  loadStep() {
-    const q = this.state.questions[this.state.currentIdx];
-
-    if (this.ui.feedbackArea) this.ui.feedbackArea.style.display = "none";
-
-    if (this.ui.optionsGrid) {
-      this.ui.optionsGrid.style.pointerEvents = "auto";
-      this.ui.optionsGrid.innerHTML = "";
-    }
-
-    if (this.ui.questionText) {
-      this.ui.questionText.innerText = q.q;
-    }
-
-    if (this.ui.progressText) {
-      this.ui.progressText.innerText = `Câu ${this.state.currentIdx + 1} / ${
-        this.state.questions.length
-      }`;
-    }
-    this.updateProgress();
-
-    if (this.ui.optionsGrid) {
-      q.options.forEach((opt, i) => {
-        const btn = document.createElement("button");
-        btn.className = "option-card";
-        btn.innerText = opt;
-
-        // --- THÊM LOGIC RIPPLE VÀO ĐÂY ---
-        btn.onclick = (e) => {
-          createRipple(e); // Tạo hiệu ứng sóng
-          this.handleAnswer(i, btn); // Xử lý đáp án
-        };
-        // ----------------------------------
-
-        this.ui.optionsGrid.appendChild(btn);
-      });
-    }
-  }
-
-  updateMemoryStats(questionId, isCorrect) {
-    if (!this.stats.questionStats[questionId]) {
-      this.stats.questionStats[questionId] = {
-        wrong: 0,
-        correct: 0,
-        interval: 0,
-        nextReview: 0,
-      };
-    }
-
-    const stat = this.stats.questionStats[questionId];
-    const now = Date.now();
-    const ONE_DAY = 24 * 60 * 60 * 1000;
-
-    if (isCorrect) {
-      stat.correct++;
-      if (stat.interval === 0) stat.interval = 1;
-      else if (stat.interval === 1) stat.interval = 3;
-      else stat.interval = Math.round(stat.interval * 1.8);
-      stat.nextReview = now + stat.interval * ONE_DAY;
-    } else {
-      stat.wrong++;
-      stat.interval = 0;
-      stat.nextReview = now;
-      if (!this.stats.mistakeIds.includes(questionId)) {
-        this.stats.mistakeIds.push(questionId);
-      }
-    }
-    this.stats.questionStats[questionId] = stat;
-  }
-
-  handleAnswer(idx, btnElement) {
-    const q = this.state.questions[this.state.currentIdx];
-    const isCorrect = idx === q.a;
-
-    this.state.history.push({
-      qId: q.id,
-      isCorrect: isCorrect,
-      userAns: idx,
-    });
-
-    if (this.ui.optionsGrid) {
-      this.ui.optionsGrid.style.pointerEvents = "none";
-      const cards = document.querySelectorAll(".option-card");
-      cards.forEach((c) => (c.style.pointerEvents = "none"));
-    }
-    this.updateMemoryStats(q.id, isCorrect);
-
-    if (isCorrect) {
-      btnElement.classList.add("correct");
-      this.stats.xp += 10;
-      localStorage.setItem("mp_stats", JSON.stringify(this.stats));
-      if (typeof confetti === "function") {
-        confetti({ particleCount: 30, spread: 50, origin: { y: 0.7 } });
-      }
-
-      if (this.state.isMistakeMode) {
-        this.stats.mistakeIds = this.stats.mistakeIds.filter(
-          (id) => id !== q.id
-        );
-      }
-
-      this.sessionState.currentStreak++;
-      this.sessionState.consecutiveWrong = 0;
-
-      if (this.sessionState.currentStreak >= 3) {
-        this.setBgState("warm");
-      } else {
-        this.setBgState("normal");
-      }
-    } else {
-      btnElement.classList.add("wrong");
-      if (this.ui.optionsGrid && this.ui.optionsGrid.children[q.a]) {
-        this.ui.optionsGrid.children[q.a].classList.add("correct");
-      }
-
-      if (!this.stats.mistakeIds.includes(q.id)) {
-        this.stats.mistakeIds.push(q.id);
-      }
-
-      this.sessionState.consecutiveWrong++;
-      this.sessionState.currentStreak = 0;
-
-      if (this.sessionState.consecutiveWrong >= 2) {
-        this.setBgState("cold");
-      } else {
-        this.setBgState("normal");
-      }
-    }
-
-    this.stats.totalAnswered++;
-    localStorage.setItem("mp_stats", JSON.stringify(this.stats));
-
-    if (this.ui.feedbackArea && this.ui.microHint) {
-      this.ui.feedbackArea.classList.remove(
-        "feedback-correct",
-        "feedback-wrong"
-      );
-      this.ui.feedbackArea.classList.add(
-        isCorrect ? "feedback-correct" : "feedback-wrong"
-      );
-      this.ui.microHint.innerHTML = `
-            <div style="display: flex; align-items: start; gap: 12px;">
-                <div style="font-size: 1.6rem; line-height: 1;">${
-                  isCorrect ? "🎉" : "💡"
-                }</div>
-                <div>
-                    <strong style="color: ${
-                      isCorrect ? "#10b981" : "#ef4444"
-                    }; font-size: 1.1rem; display: block; margin-bottom: 4px;">
-                        ${isCorrect ? "Tuyệt vời!" : "Đáp án đúng là:"}
-                    </strong>
-                    <span style="opacity: 0.95; font-size: 0.95rem;">${
-                      q.explanation
-                    }</span>
-                </div>
-            </div>`;
-    }
-
-    if (this.ui.feedbackArea) {
-      this.ui.feedbackArea.style.display = "block";
-      this.ui.feedbackArea.scrollIntoView({ behavior: "smooth", block: "end" });
-    }
-    this.playClickSound(isCorrect ? "correct" : "wrong");
-  }
-
-  setBgState(state) {
-    if (!this.bgElement) return;
-    this.bgElement.classList.remove("state-warm", "state-cold");
-    if (state === "warm") this.bgElement.classList.add("state-warm");
-    else if (state === "cold") this.bgElement.classList.add("state-cold");
-  }
-
-  nextStep() {
-    this.state.currentIdx++;
-    if (this.state.currentIdx < this.state.questions.length) {
-      this.loadStep();
-    } else {
-      this.endQuiz();
-    }
-  }
-
-  updateProgress() {
-    const bar = document.getElementById("progress-glow");
-    if (bar) {
-      const p = (this.state.currentIdx / this.state.questions.length) * 100;
-      bar.style.width = p + "%";
-    }
-  }
-
-  // --- END QUIZ: PHIÊN BẢN KNOWLEDGE GALAXY ---
-  // --- END QUIZ: PHIÊN BẢN KNOWLEDGE GALAXY ---
-  endQuiz() {
-    const correctCount = this.state.history.filter((h) => h.isCorrect).length;
-    const total = this.state.questions.length;
-    const percentage = Math.round((correctCount / total) * 100);
-    const xpGained = correctCount * 10;
-
-    // 1. Logic danh hiệu
-    let title = "Cố gắng hơn nhé! 💪";
-    let msg = "Hành trình vạn dặm bắt đầu từ bước chân đầu tiên.";
-    if (percentage >= 80) {
-      title = "Xuất sắc! 🌟";
-      msg = "Bạn đã làm chủ kiến thức này.";
-    } else if (percentage >= 50) {
-      title = "Làm tốt lắm! 🔥";
-      msg = "Bạn đang đi đúng hướng.";
-    }
-
-    // 2. Render Layout Kết quả Mới
-    const resultDiv = document.getElementById("result-content");
-
-    if (resultDiv) {
-      resultDiv.innerHTML = `
-            <div class="result-card">
-                <h2 style="font-size: 2rem; margin-bottom: 5px;">${title}</h2>
-                <p style="opacity: 0.8; margin-bottom: 20px;">${msg}</p>
-
-                <div class="summary-grid">
-                    <div class="summary-card">
-                        <span class="summary-value" style="color: #2ecc71;">${percentage}%</span>
-                        <span class="summary-label">Chính xác</span>
-                    </div>
-                    <div class="summary-card">
-                        <span class="summary-value" style="color: #f1c40f;">+${xpGained}</span>
-                        <span class="summary-label">XP Kiếm được</span>
-                    </div>
-                    <div class="summary-card">
-                        <span class="summary-value" style="color: #e74c3c;">${this.stats.streak}🔥</span>
-                        <span class="summary-label">Streak</span>
-                    </div>
-                </div>
-
-                <div style="text-align: left; font-weight: 700; margin-bottom: 10px; color: var(--text-main);">
-                    <i class="fas fa-project-diagram"></i> Bản đồ kiến thức:
-                </div>
-                
-                <div class="knowledge-graph-wrapper" id="knowledge-graph">
-                    <svg class="graph-svg" id="graph-lines"></svg>
-                    </div>
-
-                <div style="margin-top: 25px;">
-                    <button class="hero-btn" onclick="app.startQuiz('${this.state.currentCategory}')">
-                        <i class="fas fa-redo-alt"></i> Bắt đầu nhịp thở mới
-                    </button>
-                    
-                    <button class="mode-btn secondary" style="width: 100%; margin-top: 10px; border: none; background: transparent;" onclick="app.navigate('dashboard')">
-                        <i class="fas fa-arrow-left"></i> Quay về Dashboard
-                    </button>
-                </div>
-            </div>
-        `;
-
-      // 3. Khởi tạo Graph sau khi HTML đã render
-      setTimeout(() => this.renderGalaxyGraph(), 50);
-    }
-
-    this.navigate("result");
-    localStorage.setItem("mp_stats", JSON.stringify(this.stats));
-
-    // Hiệu ứng nền
-    if (this.bgElement) {
-      this.bgElement.classList.add("pulse-rankup");
-      setTimeout(() => {
-        this.bgElement.classList.remove("pulse-rankup");
-        this.setBgState("normal");
-      }, 2000);
-    }
-  }
-
-  // --- HÀM VẼ GRAPH (Pure JS Logic) ---
-  renderGalaxyGraph() {
-    const container = document.getElementById("knowledge-graph");
-    const svg = document.getElementById("graph-lines");
-    if (!container || !svg) return;
-
-    const width = container.offsetWidth;
-    const height = container.offsetHeight;
-    const history = this.state.history;
-    const totalNodes = history.length;
-
-    // Logic xếp vị trí: Dạng Sóng (Sine Wave) hoặc ZigZag để tạo đường dẫn
-    // Tạo padding 2 bên
-    const paddingX = 40;
-    const stepX = (width - paddingX * 2) / (totalNodes - 1);
-
-    let nodesHTML = "";
-    let linesHTML = "";
-
-    // Mảng lưu tọa độ để vẽ dây
-    const coords = [];
-
-    history.forEach((h, index) => {
-      // Tính toán tọa độ (X: đều nhau, Y: dao động sóng sin)
-      const x = paddingX + stepX * index;
-      // Tạo độ lệch ngẫu nhiên cho Y để trông tự nhiên hơn
-      const randomY = Math.sin(index) * 50;
-      const y = height / 2 + randomY;
-
-      coords.push({ x, y });
-
-      // 1. Tạo Node HTML
-      const isCorrect = h.isCorrect;
-      const qData = this.state.questions.find((q) => q.id === h.qId) || {
-        q: "Câu hỏi",
-        explanation: "...",
-      };
-
-      // Cắt ngắn câu hỏi cho tooltip
-      const shortQ =
-        qData.q.length > 50 ? qData.q.substring(0, 50) + "..." : qData.q;
-
-      nodesHTML += `
-            <div class="graph-node ${isCorrect ? "correct" : "wrong"}" 
-                 style="left: ${x - 18}px; top: ${y - 18}px;">
-                ${index + 1}
-                <div class="node-tooltip">
-                    <span class="tooltip-title">${
-                      isCorrect ? "Chính xác" : "Chưa đúng"
-                    }</span>
-                    ${shortQ}
-                </div>
-            </div>
-        `;
-
-      // 2. Tạo đường nối (Line) tới node trước đó
-      if (index > 0) {
-        const prev = coords[index - 1];
-        linesHTML += `
-                <line x1="${prev.x}" y1="${prev.y}" x2="${x}" y2="${y}" 
-                      class="connection-line" />
-            `;
-      }
-    });
-
-    // Inject vào DOM
-    svg.innerHTML = linesHTML;
-    // Thêm nodes vào sau svg (để đè lên lines)
-    container.insertAdjacentHTML("beforeend", nodesHTML);
-  }
-
-  setupTheme() {
-    const themeBtn = document.getElementById("theme-toggle");
-    if (!themeBtn) return;
-    const isDark = localStorage.getItem("mp_theme") === "dark";
-    if (isDark) {
-      document.body.classList.add("dark-mode");
-      themeBtn.innerHTML = '<i class="fas fa-sun"></i>';
-    }
-    themeBtn.onclick = () => {
-      document.body.classList.toggle("dark-mode");
-      const isDarkModeNow = document.body.classList.contains("dark-mode");
-      if (isDarkModeNow) {
-        themeBtn.innerHTML = '<i class="fas fa-sun"></i>';
-        localStorage.setItem("mp_theme", "dark");
-      } else {
-        themeBtn.innerHTML = '<i class="fas fa-moon"></i>';
-        localStorage.setItem("mp_theme", "light");
-      }
-    };
   }
 
   toggleSidebar() {
     const sidebar = document.getElementById("app-sidebar");
     const overlay = document.getElementById("sidebar-overlay");
     if (sidebar && overlay) {
-      sidebar.classList.toggle("active");
-      overlay.classList.toggle("active");
-      if (sidebar.classList.contains("active")) {
+      const isActive = sidebar.classList.contains("active");
+      if (isActive) {
+        sidebar.classList.remove("active");
+        overlay.classList.remove("active");
+      } else {
+        sidebar.classList.add("active");
+        overlay.classList.add("active");
         this.updateSidebarInfo();
       }
     }
@@ -669,33 +169,106 @@ class LearningApp {
   updateSidebarInfo() {
     const rankEl = document.getElementById("sidebar-rank");
     const xpEl = document.getElementById("sidebar-xp");
+    const currentRank = getRankByXP(this.stats.xp);
+
     if (xpEl) xpEl.innerText = `${this.stats.xp} XP`;
-    const currentRankName = document.getElementById("rank-name")?.innerText;
-    if (rankEl && currentRankName) rankEl.innerText = currentRankName;
+    if (rankEl) {
+      rankEl.innerText = currentRank.name;
+      rankEl.style.color = currentRank.color;
+    }
   }
 
-  showToothlessMeme() {
-    const overlay = document.getElementById("meme-overlay");
-    const audio = document.getElementById("meme-audio");
-    if (overlay) {
-      overlay.classList.add("active");
-      if (audio) {
-        audio.currentTime = 0;
-        audio.volume = 0.5;
-        audio
-          .play()
-          .catch((e) => console.log("Trình duyệt chặn tự phát âm thanh"));
+  // --- FEATURE: DASHBOARD ---
+  renderDashboard() {
+    const headerEl = document.getElementById("dashboard-header");
+    const pathContainer = document.getElementById("path-container");
+    const mistakeBanner = document.getElementById("mistake-alert");
+
+    const hour = new Date().getHours();
+    const greeting =
+      hour < 12
+        ? "Chào buổi sáng"
+        : hour < 18
+        ? "Chào buổi chiều"
+        : "Chào buổi tối";
+    const rank = getRankByXP(this.stats.xp);
+
+    // 1. Header
+    if (headerEl) {
+      headerEl.innerHTML = `
+            <div class="welcome-header">
+                <div>
+                    <h1>${greeting},<br/>Learner!</h1>
+                    <p class="subtitle">Sẵn sàng bứt phá hôm nay?</p>
+                </div>
+                <div class="user-badge" onclick="app.toggleSidebar()">
+                    <div class="avatar"><i class="fas fa-user-astronaut"></i></div>
+                    <div style="display:flex; flex-direction:column; line-height:1.2">
+                        <span style="font-weight:700; font-size:0.9rem; color:${rank.color}">${rank.name}</span>
+                        <span style="font-size:0.75rem; opacity:0.7">${this.stats.xp} XP</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // 2. Mistake Banner
+    const allStats = Object.entries(this.stats.questionStats || {});
+    const weakQuestions = allStats.filter(([id, s]) => s.wrong > 0);
+
+    if (mistakeBanner) {
+      if (weakQuestions.length > 0) {
+        mistakeBanner.className = "mistake-hero"; // Cần CSS từ bước trước
+        mistakeBanner.style.display = "flex";
+        mistakeBanner.innerHTML = `
+                <div class="mistake-content">
+                    <div class="mistake-icon-box"><i class="fas fa-tools"></i></div>
+                    <div>
+                        <h4>Cần bảo trì!</h4>
+                        <p>Bạn đang hổng <strong style="color: #e17055">${weakQuestions.length} câu</strong>.</p>
+                    </div>
+                </div>
+                <button class="review-btn" onclick="app.startMistakeMode()">Sửa lỗi <i class="fas fa-arrow-right"></i></button>
+            `;
+      } else {
+        mistakeBanner.style.display = "none";
       }
     }
+
+    // 3. Grid
+    if (pathContainer) {
+      pathContainer.innerHTML = "";
+      Object.keys(this.allData).forEach((key) => {
+        const count = this.allData[key].length;
+        let icon = "fa-book";
+        if (key.toLowerCase().includes("hci")) icon = "fa-laptop-code";
+        else if (key.toLowerCase().includes("english")) icon = "fa-language";
+
+        const card = document.createElement("div");
+        card.className = "course-card";
+        card.onclick = (e) => {
+          createRipple(e);
+          this.startQuiz(key);
+        };
+
+        card.innerHTML = `
+                <div class="card-icon"><i class="fas ${icon}"></i></div>
+                <div style="margin-top:auto">
+                    <h3 style="font-size:1.3rem; margin-bottom:5px">${key.toUpperCase()}</h3>
+                    <div class="card-meta">
+                        <span><i class="fas fa-layer-group"></i> ${count} Câu</span>
+                    </div>
+                </div>
+            `;
+        pathContainer.appendChild(card);
+      });
+    }
   }
 
-  closeToothlessMeme() {
-    const overlay = document.getElementById("meme-overlay");
-    const audio = document.getElementById("meme-audio");
-    if (overlay) {
-      overlay.classList.remove("active");
-      if (audio) audio.pause();
-    }
+  // --- FEATURE: QUIZ FLOW ---
+  startQuiz(category) {
+    this.tempCategory = category;
+    document.getElementById("mode-modal").classList.add("active");
   }
 
   confirmStartQuiz(mode) {
@@ -710,149 +283,236 @@ class LearningApp {
       const now = Date.now();
       questions = questions.filter((q) => {
         const stat = this.stats.questionStats[q.id];
-        if (!stat) return true;
-        return stat.nextReview <= now;
+        return !stat || stat.nextReview <= now;
       });
-
       if (questions.length === 0) {
-        alert("Bạn đã nhớ hết các câu hỏi của chủ đề này! Hãy quay lại sau.");
+        alert("Bạn đã nhớ hết chủ đề này! Hãy quay lại sau.");
         return;
       }
     }
+
     this.state.questions = questions.sort(() => Math.random() - 0.5);
     this.resetFlow();
-    this.applyModeUI(mode);
-  }
 
-  // --- FIX LỖI TIMER ---
-  applyModeUI(mode) {
-    const timerBadge = document.getElementById("timer");
-    const appContainer = document.getElementById("app-container");
-
-    if (appContainer) {
-      appContainer.classList.remove("focus-mode");
-    }
-
-    // CHỈ THỰC HIỆN NẾU TÌM THẤY ELEMENT TIMER
-    if (timerBadge) {
-      timerBadge.style.display = "block";
-      if (mode === "speed") {
-        timerBadge.innerText = "5s 🔥";
-        timerBadge.style.background = "#e74c3c";
-      } else if (mode === "focus") {
-        timerBadge.style.display = "none";
-      } else {
-        timerBadge.innerText = "15s";
-        timerBadge.style.background = "#ff9f43";
-      }
+    // UI Setup
+    const timerEl = document.getElementById("timer");
+    if (timerEl) {
+      timerEl.style.display = mode === "focus" ? "none" : "block";
+      timerEl.innerText = mode === "speed" ? "5s 🔥" : "15s";
     }
   }
-  // Thêm vào main.js
-  playClickSound(type) {
-    // Tạo context âm thanh (Web Audio API) hoặc dùng file mp3 ngắn
-    // Cách đơn giản nhất:
-    const audio = new Audio();
-    if (type === "correct") audio.src = "path/to/correct.mp3"; // Tiếng "Ding"
-    else if (type === "wrong") audio.src = "path/to/wrong.mp3"; // Tiếng "Buzz"
-    else audio.src = "path/to/click.mp3"; // Tiếng "Pop" nhẹ
 
-    audio.volume = 0.5;
-    audio.play().catch((e) => {}); // Bỏ qua lỗi nếu trình duyệt chặn
+  startMistakeMode() {
+    this.state.isMistakeMode = true;
+    const allQ = Object.values(this.allData).flat();
+    this.state.questions = allQ.filter(
+      (q) =>
+        this.stats.questionStats[q.id] &&
+        this.stats.questionStats[q.id].wrong > 0
+    );
+    this.resetFlow();
   }
 
-  // Thêm method này vào trong class LearningApp
+  resetFlow() {
+    this.state.currentIdx = 0;
+    this.state.history = [];
+    this.navigate("quiz");
+    this.loadStep();
+  }
 
-  setupTheme() {
-    const themeBtn = document.getElementById("theme-toggle");
-    const body = document.body;
-    const icon = themeBtn.querySelector("i");
+  loadStep() {
+    const q = this.state.questions[this.state.currentIdx];
 
-    // 1. Hàm cập nhật Icon
-    const updateIcon = (isDark) => {
-      if (isDark) {
-        icon.classList.remove("fa-moon");
-        icon.classList.add("fa-sun");
-      } else {
-        icon.classList.remove("fa-sun");
-        icon.classList.add("fa-moon");
-      }
-    };
+    // Reset UI
+    if (this.ui.quiz.feedbackArea)
+      this.ui.quiz.feedbackArea.style.display = "none";
+    if (this.ui.quiz.questionText) this.ui.quiz.questionText.innerText = q.q;
 
-    // 2. Logic kiểm tra ban đầu (Ưu tiên LocalStorage -> System Pref)
-    const savedTheme = localStorage.getItem("quiz_theme");
-    const systemPrefersDark = window.matchMedia(
-      "(prefers-color-scheme: dark)"
-    ).matches;
+    // Update Progress Bar
+    const percent = (this.state.currentIdx / this.state.questions.length) * 100;
+    if (this.ui.quiz.progressGlow)
+      this.ui.quiz.progressGlow.style.width = `${percent}%`;
 
-    if (savedTheme === "dark" || (!savedTheme && systemPrefersDark)) {
-      body.classList.add("dark-mode");
-      updateIcon(true);
-    } else {
-      updateIcon(false);
-    }
+    // Render Options
+    if (this.ui.quiz.optionsGrid) {
+      this.ui.quiz.optionsGrid.innerHTML = "";
+      this.ui.quiz.optionsGrid.style.pointerEvents = "auto";
 
-    // 3. Sự kiện Click Toggle
-    themeBtn.addEventListener("click", () => {
-      // Toggle class
-      body.classList.toggle("dark-mode");
-      const isDark = body.classList.contains("dark-mode");
-
-      // Animation xoay nhẹ icon khi click
-      themeBtn.style.transform = "scale(0.8) rotate(180deg)";
-      setTimeout(() => {
-        themeBtn.style.transform = "";
-        updateIcon(isDark);
-      }, 200);
-
-      // Lưu vào LocalStorage
-      localStorage.setItem("quiz_theme", isDark ? "dark" : "light");
-
-      // (Tùy chọn) Phát âm thanh click nhẹ
-      // this.playClickSound('click');
-    });
-    // --- 1. HÀM TẠO HIỆU ỨNG RIPPLE ---
-    function createRipple(event) {
-      const button = event.currentTarget;
-      const circle = document.createElement("span");
-      const diameter = Math.max(button.clientWidth, button.clientHeight);
-      const radius = diameter / 2;
-
-      // Tính toán vị trí click
-      const rect = button.getBoundingClientRect();
-      circle.style.width = circle.style.height = `${diameter}px`;
-      circle.style.left = `${event.clientX - rect.left - radius}px`;
-      circle.style.top = `${event.clientY - rect.top - radius}px`;
-      circle.classList.add("ripple");
-
-      // Xóa ripple cũ (nếu có) để DOM sạch
-      const existingRipple = button.querySelector(".ripple");
-      if (existingRipple) {
-        existingRipple.remove();
-      }
-
-      button.appendChild(circle);
-    }
-
-    // --- 2. GẮN SỰ KIỆN CHO CÁC NÚT ---
-    // Bạn có thể gọi hàm này trong init() hoặc sau khi render nội dung
-    function attachMicroInteractions() {
-      const buttons = document.querySelectorAll(
-        ".option-card, .mode-option-btn, .review-btn, .nav-btn, .hero-btn"
-      );
-
-      buttons.forEach((btn) => {
-        btn.addEventListener("click", function (e) {
+      q.options.forEach((opt, i) => {
+        const btn = document.createElement("button");
+        btn.className = "option-card";
+        btn.innerHTML = `<span>${opt}</span><i class="fas status-icon"></i>`;
+        btn.onclick = (e) => {
           createRipple(e);
-          // playClickSound(); // Nếu bạn đã có hàm âm thanh
-        });
+          this.handleAnswer(i, btn);
+        };
+        this.ui.quiz.optionsGrid.appendChild(btn);
       });
     }
-
-    // Gợi ý: Gọi attachMicroInteractions() sau khi render câu hỏi (loadStep)
-    // hoặc render dashboard để các nút mới sinh ra cũng có hiệu ứng.
   }
 
-  // Đừng quên gọi this.setupTheme() trong constructor hoặc hàm init() nhé!
+  handleAnswer(idx, btnElement) {
+    const q = this.state.questions[this.state.currentIdx];
+    const isCorrect = idx === q.a;
+
+    // Lock UI
+    this.ui.quiz.optionsGrid.style.pointerEvents = "none";
+
+    // Update Visuals
+    btnElement.classList.add(isCorrect ? "correct" : "wrong");
+    if (!isCorrect) {
+      // Show correct answer
+      this.ui.quiz.optionsGrid.children[q.a].classList.add("correct");
+    }
+
+    // Update Stats
+    this.updateStats(q.id, isCorrect);
+    this.state.history.push({ qId: q.id, isCorrect });
+
+    // Show Feedback
+    if (this.ui.quiz.feedbackArea) {
+      this.ui.quiz.feedbackArea.style.display = "block";
+      this.ui.quiz.microHint.innerHTML = `
+            <div style="display:flex; gap:10px; align-items:center;">
+                <div style="font-size:1.5rem">${isCorrect ? "🎉" : "💡"}</div>
+                <div>
+                    <strong>${
+                      isCorrect ? "Chính xác!" : "Đáp án đúng:"
+                    }</strong>
+                    <div style="font-size:0.9rem; opacity:0.8">${
+                      q.explanation || ""
+                    }</div>
+                </div>
+            </div>
+        `;
+      this.ui.quiz.feedbackArea.scrollIntoView({ behavior: "smooth" });
+    }
+  }
+
+  updateStats(qId, isCorrect) {
+    if (!this.stats.questionStats[qId]) {
+      this.stats.questionStats[qId] = {
+        wrong: 0,
+        correct: 0,
+        nextReview: 0,
+        interval: 0,
+      };
+    }
+    const s = this.stats.questionStats[qId];
+    const ONE_DAY = 86400000;
+
+    if (isCorrect) {
+      s.correct++;
+      this.stats.xp += 10;
+
+      // Simple SRS Logic
+      if (s.interval === 0) s.interval = 1;
+      else s.interval = Math.round(s.interval * 1.5);
+      s.nextReview = Date.now() + s.interval * ONE_DAY;
+    } else {
+      s.wrong++;
+      s.interval = 0;
+      s.nextReview = Date.now();
+    }
+    this.saveStats();
+  }
+
+  nextStep() {
+    this.state.currentIdx++;
+    if (this.state.currentIdx < this.state.questions.length) {
+      this.loadStep();
+    } else {
+      this.endQuiz();
+    }
+  }
+
+  endQuiz() {
+    // Tính toán kết quả
+    const correct = this.state.history.filter((h) => h.isCorrect).length;
+    const total = this.state.questions.length;
+    const percent = Math.round((correct / total) * 100);
+
+    const resultDiv = document.getElementById("result-content");
+    if (resultDiv) {
+      resultDiv.innerHTML = `
+            <div class="result-header">
+                <div class="score-circle" style="--p:${percent}%">
+                    <div class="score-inner">${percent}%</div>
+                </div>
+                <h2>${percent >= 80 ? "Xuất sắc! 🌟" : "Hoàn thành! 👍"}</h2>
+                <p>Bạn đã trả lời đúng ${correct}/${total} câu.</p>
+            </div>
+            
+            <div class="knowledge-graph-wrapper" id="knowledge-graph">
+                 <svg class="graph-svg" id="graph-lines" width="100%" height="100%"></svg>
+            </div>
+
+            <button class="hero-btn" onclick="app.navigate('dashboard')">Về Dashboard</button>
+          `;
+      setTimeout(() => this.renderGalaxyGraph(), 50);
+    }
+    this.navigate("result");
+
+    if (percent >= 80 && typeof confetti === "function") {
+      confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+    }
+  }
+
+  // Vẽ Graph đơn giản
+  renderGalaxyGraph() {
+    const svg = document.getElementById("graph-lines");
+    const container = document.getElementById("knowledge-graph");
+    if (!svg || !container) return;
+
+    const history = this.state.history;
+    const width = container.clientWidth;
+    const height = container.clientHeight;
+    const step = width / (history.length + 1);
+
+    let htmlNodes = "";
+    let pathD = `M ${step} ${height / 2}`;
+
+    history.forEach((h, i) => {
+      const x = step * (i + 1);
+      const y = height / 2 + Math.sin(i) * 30 * (h.isCorrect ? -1 : 1);
+
+      htmlNodes += `<div class="graph-node ${
+        h.isCorrect ? "correct" : "wrong"
+      }" style="left:${x - 16}px; top:${y - 16}px">${i + 1}</div>`;
+      if (i > 0) pathD += ` L ${x} ${y}`;
+    });
+
+    svg.innerHTML = `<path d="${pathD}" stroke="rgba(0,0,0,0.2)" stroke-width="2" fill="none" />`;
+    container.insertAdjacentHTML("beforeend", htmlNodes);
+  }
+
+  // --- THEME ---
+  setupTheme() {
+    const btn = document.getElementById("theme-toggle");
+    const icon = btn.querySelector("i");
+
+    // Load saved
+    if (localStorage.getItem("mp_theme") === "dark") {
+      document.body.classList.add("dark-mode");
+      icon.className = "fas fa-sun";
+    }
+
+    btn.onclick = () => {
+      document.body.classList.toggle("dark-mode");
+      const isDark = document.body.classList.contains("dark-mode");
+      icon.className = isDark ? "fas fa-sun" : "fas fa-moon";
+      localStorage.setItem("mp_theme", isDark ? "dark" : "light");
+    };
+  }
+
+  // Meme features
+  showToothlessMeme() {
+    document.getElementById("meme-overlay").classList.add("active");
+  }
+  closeToothlessMeme() {
+    document.getElementById("meme-overlay").classList.remove("active");
+  }
 }
 
+// Start
 const app = new LearningApp(quizData);
