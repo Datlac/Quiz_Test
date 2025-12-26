@@ -1,3 +1,16 @@
+// CẤU HÌNH RANK: PHƯƠNG ÁN 3 (ESPORT / MMO)
+const RANK_SYSTEM = [
+  { threshold: 0, name: "Bronze", color: "#cd7f32" }, // Đồng
+  { threshold: 150, name: "Silver", color: "#bdc3c7" }, // Bạc
+  { threshold: 400, name: "Gold", color: "#f1c40f" }, // Vàng (Sáng)
+  { threshold: 800, name: "Platinum", color: "#00cec9" }, // Bạch kim (Xanh ngọc)
+  { threshold: 1500, name: "Diamond", color: "#74b9ff" }, // Kim cương (Xanh dương sáng)
+  { threshold: 2500, name: "Master", color: "#9b59b6" }, // Cao thủ (Tím)
+  { threshold: 4000, name: "Grandmaster", color: "#d63031" }, // Đại cao thủ (Đỏ)
+  { threshold: 6000, name: "Challenger", color: "#e84393" }, // Thách đấu (Hồng đậm)
+  { threshold: 9000, name: "Immortal", color: "#fdcb6e" }, // Bất tử (Vàng cam)
+  { threshold: 13000, name: "Apex", color: "#2d3436" }, // Đỉnh cao (Đen quyền lực / Hoặc hiệu ứng cầu vồng)
+];
 class LearningApp {
   constructor(data) {
     this.allData = data;
@@ -77,6 +90,32 @@ class LearningApp {
 
   // --- DASHBOARD ---
   renderDashboard() {
+    // --- PHẦN 1: LOGIC RANK MỚI ---
+    const currentXP = this.stats.xp;
+    let currentRank = RANK_SYSTEM[0];
+    let nextRank = RANK_SYSTEM[RANK_SYSTEM.length - 1]; // Mặc định là max
+    let progressPercent = 100;
+
+    // Tìm Rank hiện tại và Rank tiếp theo
+    for (let i = 0; i < RANK_SYSTEM.length; i++) {
+      if (currentXP >= RANK_SYSTEM[i].threshold) {
+        currentRank = RANK_SYSTEM[i];
+        if (i < RANK_SYSTEM.length - 1) {
+          nextRank = RANK_SYSTEM[i + 1];
+          // Tính % tiến độ đến cấp tiếp theo
+          const currentLevelXP = currentXP - currentRank.threshold;
+          const nextLevelNeed = nextRank.threshold - currentRank.threshold;
+          progressPercent = Math.floor((currentLevelXP / nextLevelNeed) * 100);
+        } else {
+          // Đã max cấp
+          progressPercent = 100;
+          nextRank = { name: "Max Level", threshold: currentXP };
+        }
+      }
+    }
+    // -----------------------------
+
+    // Render Stats cũ
     const xpEl = document.getElementById("dash-xp");
     if (xpEl) xpEl.innerText = this.stats.xp;
 
@@ -95,6 +134,31 @@ class LearningApp {
         this.stats.mistakeIds.length > 0 ? "flex" : "none";
     }
 
+    // --- PHẦN 2: RENDER UI RANK ---
+    const rankNameEl = document.getElementById("rank-name");
+    const rankBarEl = document.getElementById("rank-progress-bar");
+    const rankTextEl = document.getElementById("rank-next-text");
+
+    if (rankNameEl) {
+      rankNameEl.innerText = currentRank.name;
+      rankNameEl.style.color = currentRank.color;
+    }
+    if (rankBarEl) {
+      rankBarEl.style.width = `${progressPercent}%`;
+      rankBarEl.style.backgroundColor = currentRank.color;
+    }
+    if (rankTextEl) {
+      if (progressPercent === 100 && currentRank.threshold === 2000) {
+        rankTextEl.innerText = "Bạn đã đạt cấp độ tối đa!";
+      } else {
+        rankTextEl.innerText = `Còn ${
+          nextRank.threshold - currentXP
+        } XP để lên ${nextRank.name}`;
+      }
+    }
+    // -----------------------------
+
+    // Render Learning Paths (Giữ nguyên code cũ)
     const pathContainer = document.getElementById("path-container");
     if (pathContainer) {
       pathContainer.innerHTML = "";

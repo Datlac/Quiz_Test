@@ -64,15 +64,58 @@
       </section>
 
       <section id="view-dashboard" class="view-section" style="display: none">
-        <div class="dashboard-header">
-          <div>
-            <h2>Chào bạn trở lại! 👋</h2>
-            <p>Hôm nay bạn muốn chinh phục gì?</p>
+        <div class="dashboard-header"></div>
+
+        <div
+          class="glass-card rank-card"
+          style="margin-bottom: 25px; text-align: left; padding: 25px"
+        >
+          <div
+            style="
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              margin-bottom: 10px;
+            "
+          >
+            <h3 style="margin: 0; font-size: 1.2rem">Cấp độ hiện tại</h3>
+            <span id="rank-name" style="font-weight: 800; font-size: 1.3rem"
+              >Loading...</span
+            >
           </div>
-          <div class="streak-badge">
-            🔥 <span id="dash-streak">0</span> Ngày Streak
+
+          <div
+            style="
+              background: rgba(0, 0, 0, 0.1);
+              height: 10px;
+              border-radius: 5px;
+              overflow: hidden;
+            "
+          >
+            <div
+              id="rank-progress-bar"
+              style="
+                width: 0%;
+                height: 100%;
+                background: #2bcbba;
+                transition: width 0.5s;
+              "
+            ></div>
           </div>
+
+          <p
+            id="rank-next-text"
+            style="
+              font-size: 0.85rem;
+              color: #666;
+              margin-top: 8px;
+              text-align: right;
+            "
+          >
+            Loading...
+          </p>
         </div>
+        <div class="stats-overview"></div>
 
         <div class="stats-overview">
           <div class="stat-card">
