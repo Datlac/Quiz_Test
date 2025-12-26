@@ -191,6 +191,7 @@ class LearningApp {
   }
 
   startQuiz(category) {
+    this.state.currentCategory = category; // ✅ MỚI: Lưu lại bài đang học để tí nữa Retry
     this.state.isMistakeMode = false;
     this.state.questions = [...this.allData[category]].sort(
       () => Math.random() - 0.5
@@ -391,43 +392,88 @@ class LearningApp {
   endQuiz() {
     const correctCount = this.state.history.filter((h) => h.isCorrect).length;
     const total = this.state.questions.length;
+    const percentage = Math.round((correctCount / total) * 100);
 
+    // 1. Xác định màu sắc & Lời nhắn
+    let color = "#e74c3c";
+    let title = "Cố gắng hơn nhé! 💪";
+    let msg = "Thất bại là mẹ thành công.";
+
+    if (percentage >= 80) {
+      color = "#2ecc71";
+      title = "Xuất sắc! 🌟";
+      msg = "Kiến thức của bạn rất vững chắc.";
+    } else if (percentage >= 50) {
+      color = "#f1c40f";
+      title = "Làm tốt lắm! 🔥";
+      msg = "Bạn đang đi đúng hướng.";
+    }
+
+    // 2. Xác định hành động cho nút LÀM LẠI (Fix lỗi không bấm được)
+    let retryAction = `app.startQuiz('${this.state.currentCategory}')`;
+    if (this.state.isMistakeMode) {
+      retryAction = `app.startMistakeMode()`;
+    }
+
+    // 3. Render
     const resultDiv = document.getElementById("result-content");
-    if (resultDiv) {
-      const mapHTML = this.state.history
-        .map(
-          (h, i) => `
-            <div class="node ${h.isCorrect ? "correct" : "wrong"}" title="Câu ${
-            i + 1
-          }">
-                ${i + 1}
-            </div>
-        `
-        )
-        .join("");
+    const mapHTML = this.state.history
+      .map(
+        (h, i) => `
+        <div class="node ${h.isCorrect ? "correct" : "wrong"}" title="Câu ${
+          i + 1
+        }">${i + 1}</div>
+    `
+      )
+      .join("");
 
+    if (resultDiv) {
       resultDiv.innerHTML = `
-                <h2>Hoàn thành! 🏁</h2>
-                <p>Kết quả: <b>${correctCount}/${total}</b></p>
-                
-                <div style="margin: 20px 0;">
-                    <p style="font-size: 0.9rem; margin-bottom: 10px;">Bản đồ kết quả:</p>
-                    <div id="knowledge-map">${mapHTML}</div>
+            <div class="result-card">
+                <h2>${title}</h2>
+                <p style="margin-bottom: 25px; opacity: 0.8;">${msg}</p>
+
+                <div class="score-ring-container">
+                    <div class="score-ring" style="background: conic-gradient(${color} ${percentage}%, #e0e0e0 0%);"></div>
+                    <div class="score-text">
+                        <span class="score-percent">${percentage}%</span>
+                        <span class="score-label">Chính xác</span>
+                    </div>
+                </div>
+
+                <div class="result-stats-grid">
+                    <div class="result-stat-box">
+                        <span class="stat-val">+${correctCount * 10}</span>
+                        <span class="stat-lbl">XP Nhận được</span>
+                    </div>
+                    <div class="result-stat-box">
+                        <span class="stat-val" style="color: ${color}">${correctCount}/${total}</span>
+                        <span class="stat-lbl">Câu đúng</span>
+                    </div>
+                </div>
+
+                <div style="text-align: left; margin-bottom: 5px; font-weight: 600; font-size: 0.9rem;">
+                    Bản đồ kết quả:
+                </div>
+                <div id="result-map-container" style="display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;">
+                    ${mapHTML}
                 </div>
 
                 <div class="action-group">
-                    <button class="mode-btn" onclick="app.navigate('dashboard')">🏠 Về Dashboard</button>
-                    <button class="mode-btn secondary" onclick="app.startQuiz('${
-                      this.state.questions[0]?.tag || "hci"
-                    }')">🔄 Làm lại</button>
+                    <button class="mode-btn primary" onclick="app.navigate('dashboard')">
+                        <i class="fas fa-home"></i> Dashboard
+                    </button>
+                    <button class="mode-btn secondary" onclick="${retryAction}">
+                        <i class="fas fa-redo"></i> Làm lại
+                    </button>
                 </div>
-            `;
+            </div>
+        `;
     }
 
     this.navigate("result");
     localStorage.setItem("mp_stats", JSON.stringify(this.stats));
 
-    // Hiệu ứng Pulse cuối cùng
     if (this.bgElement) {
       this.bgElement.classList.add("pulse-rankup");
       setTimeout(() => {
