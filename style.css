@@ -1,0 +1,221 @@
+:root {
+  --primary-glow: linear-gradient(135deg, #6e8efb, #a777e3);
+  --glass-bg: rgba(255, 255, 255, 0.7);
+  --text-main: #2c3e50;
+  --ease: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: "Inter", sans-serif;
+  background: #f8fafd;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  overflow: hidden;
+}
+
+/* Hiệu ứng nền chuyển động nhẹ */
+.bg-glow {
+  position: fixed;
+  width: 600px;
+  height: 600px;
+  background: radial-gradient(
+    circle,
+    rgba(110, 142, 251, 0.15) 0%,
+    rgba(255, 255, 255, 0) 70%
+  );
+  filter: blur(80px);
+  z-index: -1;
+  animation: moveGlow 15s infinite alternate var(--ease);
+}
+
+@keyframes moveGlow {
+  from {
+    transform: translate(-20%, -20%);
+  }
+  to {
+    transform: translate(20%, 20%);
+  }
+}
+
+/* 1. Card nổi (Glassmorphism) */
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 32px;
+  padding: 50px;
+  width: 90%;
+  max-width: 650px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.05);
+  text-align: center;
+}
+
+/* 2. Nhịp thở UI - Câu hỏi tập trung */
+#question-text {
+  font-size: 1.6rem;
+  font-weight: 600;
+  margin-bottom: 40px;
+  color: var(--text-main);
+  line-height: 1.4;
+}
+
+#options-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.option-card {
+  padding: 20px;
+  background: rgba(255, 255, 255, 0.8);
+  border: 2px solid transparent;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 1.1rem;
+  transition: all 0.3s var(--ease); /* 3. Phản hồi mượt 0.3s */
+}
+
+.option-card:hover {
+  transform: translateY(-3px);
+  background: #fff;
+  border-color: #6e8efb;
+  box-shadow: 0 10px 20px rgba(110, 142, 251, 0.1);
+}
+
+/* Phản hồi vi mô */
+.option-card.correct {
+  background: #d4f8e2;
+  border-color: #2ecc71;
+  color: #155724;
+}
+.option-card.wrong {
+  background: #fdeaea;
+  border-color: #e74c3c;
+  color: #721c24;
+  animation: shake 0.4s var(--ease); /* 3. Rung nhẹ */
+}
+
+@keyframes shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  25% {
+    transform: translateX(-5px);
+  }
+  75% {
+    transform: translateX(5px);
+  }
+}
+
+/* 6. Thanh tiến trình dải ánh sáng */
+.progress-wrapper {
+  position: absolute;
+  top: 40px;
+  width: 300px;
+  height: 4px;
+  background: #eee;
+  border-radius: 2px;
+}
+#progress-glow {
+  height: 100%;
+  width: 0%;
+  background: var(--primary-glow);
+  box-shadow: 0 0 15px rgba(110, 142, 251, 0.6);
+  transition: width 0.6s var(--ease);
+}
+/* Hiệu ứng phát sáng cho Card khi có Streak */
+.glass-card.streak-active {
+  border: 2px solid #ff9f43;
+  box-shadow: 0 0 30px rgba(255, 159, 67, 0.4);
+  animation: pulseGlow 2s infinite;
+}
+
+@keyframes pulseGlow {
+  0% {
+    box-shadow: 0 0 20px rgba(255, 159, 67, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(255, 159, 67, 0.7);
+  }
+  100% {
+    box-shadow: 0 0 20px rgba(255, 159, 67, 0.4);
+  }
+}
+
+/* Badge Streak hiện lên góc màn hình */
+.streak-badge {
+  position: absolute;
+  top: -20px;
+  right: -20px;
+  background: linear-gradient(45deg, #ff9f43, #ff6b6b);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 50px;
+  font-weight: 800;
+  font-size: 1.2rem;
+  box-shadow: 0 10px 20px rgba(255, 107, 107, 0.3);
+  transform: scale(0);
+  transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.streak-badge.show {
+  transform: scale(1) rotate(10deg);
+}
+
+/* Hiệu ứng hạt bắn ra khi đúng (Particle effect đơn giản) */
+.confetti {
+  position: absolute;
+  pointer-events: none;
+  animation: fly 1s ease-out forwards;
+}
+@keyframes fly {
+  to {
+    transform: translateY(-100px);
+    opacity: 0;
+  }
+}
+#knowledge-map {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  gap: 15px;
+  margin: 30px 0;
+}
+
+.node {
+  padding: 15px;
+  border-radius: 16px;
+  background: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: 2px solid #eee;
+  transition: transform 0.3s;
+}
+
+.node.correct {
+  border-color: #2ecc71;
+  color: #2ecc71;
+}
+.node.wrong {
+  border-color: #e74c3c;
+  color: #e74c3c;
+}
+.node:hover {
+  transform: scale(1.05);
+}
+
+.node small {
+  color: #666;
+  font-size: 0.7rem;
+  margin-top: 5px;
+}

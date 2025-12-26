@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Learning Flow - Trải nghiệm học tập đỉnh cao</title>
+    <link rel="stylesheet" href="style.css" />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <div class="bg-glow"></div>
+
+    <div id="app-container">
+      <div class="progress-wrapper">
+        <div id="progress-track">
+          <div id="progress-glow"></div>
+        </div>
+      </div>
+
+      <main id="quiz-flow" class="glass-card">
+        <div id="question-scene">
+          <div id="micro-hint" class="hint-text"></div>
+          <h2 id="question-text">Đang khởi tạo dòng chảy học tập...</h2>
+          <div id="options-grid"></div>
+        </div>
+
+        <div id="review-scene" style="display: none">
+          <h3>Bản đồ kiến thức của bạn</h3>
+          <div id="knowledge-map"></div>
+          <div id="mistake-analysis"></div>
+          <button class="action-btn" onclick="location.reload()">
+            Bắt đầu nhịp thở mới
+          </button>
+        </div>
+      </main>
+
+      <footer class="learning-stats">
+        <span id="streak-info">🔥 3 ngày liên tiếp</span>
+        <span id="xp-info">✨ 150 XP</span>
+      </footer>
+    </div>
+
+    <script src="question.js"></script>
+    <script src="main.js"></script>
+  </body>
+</html>
