@@ -1,17 +1,36 @@
-// CẤU HÌNH RANK: PHƯƠNG ÁN 3 (ESPORT / MMO)
+// --- CẤU HÌNH RANK SYSTEM (GIAI ĐOẠN 2: FULL PATH) ---
 const RANK_SYSTEM = [
-  { threshold: 0, name: "Bronze", color: "#cd7f32" },
-  { threshold: 150, name: "Silver", color: "#bdc3c7" },
-  { threshold: 400, name: "Gold", color: "#f1c40f" },
-  { threshold: 800, name: "Platinum", color: "#00cec9" },
-  { threshold: 1500, name: "Diamond", color: "#74b9ff" },
-  { threshold: 2500, name: "Master", color: "#9b59b6" },
-  { threshold: 4000, name: "Grandmaster", color: "#d63031" },
-  { threshold: 6000, name: "Challenger", color: "#e84393" },
-  { threshold: 9000, name: "Immortal", color: "#fdcb6e" },
-  { threshold: 13000, name: "Apex", color: "#2d3436" },
+  // Giai đoạn Tân thủ
+  { name: "Bronze", min: 0, max: 300, color: "#cd7f32" },
+  { name: "Silver", min: 300, max: 800, color: "#bdc3c7" },
+  { name: "Gold", min: 800, max: 1500, color: "#f1c40f" },
+
+  // Giai đoạn Cao thủ (User cam kết)
+  { name: "Platinum", min: 1500, max: 2500, color: "#00cec9" },
+  { name: "Master", min: 2500, max: 4000, color: "#9b59b6" }, // <-- Mới thêm
+  { name: "Grandmaster", min: 4000, max: 6000, color: "#d63031" }, // <-- Mới thêm
+
+  // Giai đoạn Huyền thoại (End Game)
+  { name: "Challenger", min: 6000, max: 9000, color: "#e84393" }, // <-- Mới thêm
+  { name: "Immortal", min: 9000, max: 13000, color: "#fdcb6e" }, // <-- Mới thêm
+  { name: "Apex", min: 13000, max: 99999, color: "#2d3436" }, // <-- Đỉnh cao
 ];
 
+// Giữ nguyên hàm helper logic
+function getRankByXP(xp) {
+  return (
+    RANK_SYSTEM.find((r) => xp >= r.min && xp < r.max) ||
+    RANK_SYSTEM[RANK_SYSTEM.length - 1]
+  );
+}
+
+function getNextRank(currentRank) {
+  const idx = RANK_SYSTEM.indexOf(currentRank);
+  if (idx >= 0 && idx < RANK_SYSTEM.length - 1) {
+    return RANK_SYSTEM[idx + 1];
+  }
+  return null;
+}
 class LearningApp {
   constructor(data) {
     this.allData = data;
@@ -93,25 +112,24 @@ class LearningApp {
   }
 
   renderDashboard() {
-    // 1. Logic Rank
+    // 1. LOGIC RANK MỚI (SỬ DỤNG HÀM HELPER)
     const currentXP = this.stats.xp;
-    let currentRank = RANK_SYSTEM[0];
-    let nextRank = RANK_SYSTEM[RANK_SYSTEM.length - 1];
-    let progressPercent = 100;
 
-    for (let i = 0; i < RANK_SYSTEM.length; i++) {
-      if (currentXP >= RANK_SYSTEM[i].threshold) {
-        currentRank = RANK_SYSTEM[i];
-        if (i < RANK_SYSTEM.length - 1) {
-          nextRank = RANK_SYSTEM[i + 1];
-          const currentLevelXP = currentXP - currentRank.threshold;
-          const nextLevelNeed = nextRank.threshold - currentRank.threshold;
-          progressPercent = Math.floor((currentLevelXP / nextLevelNeed) * 100);
-        } else {
-          progressPercent = 100;
-          nextRank = { name: "Max Level", threshold: currentXP };
-        }
-      }
+    // Tìm Rank hiện tại và Rank kế tiếp dựa trên min/max
+    const currentRank = getRankByXP(currentXP);
+    const nextRank = getNextRank(currentRank);
+
+    // Tính toán % tiến độ
+    let progressPercent = 100;
+    let nextText = "Bạn đã đạt cảnh giới tối cao!";
+
+    // Nếu còn rank tiếp theo để phấn đấu
+    if (nextRank) {
+      const xpInLevel = currentXP - currentRank.min;
+      const xpNeeded = nextRank.min - currentRank.min;
+      // Công thức tính % đã fix
+      progressPercent = Math.floor((xpInLevel / xpNeeded) * 100);
+      nextText = `Còn ${nextRank.min - currentXP} XP để lên ${nextRank.name}`;
     }
 
     // 2. Render Stats
@@ -141,6 +159,22 @@ class LearningApp {
     if (rankNameEl) {
       rankNameEl.innerText = currentRank.name;
       rankNameEl.style.color = currentRank.color;
+      const highTiers = [
+        "Master",
+        "Grandmaster",
+        "Challenger",
+        "Immortal",
+        "Apex",
+      ];
+
+      if (highTiers.includes(currentRank.name)) {
+        // Tạo bóng đổ cùng màu với rank -> Hiệu ứng Neon
+        rankNameEl.style.textShadow = `0 0 15px ${currentRank.color}`;
+        rankNameEl.style.fontWeight = "900";
+      } else {
+        rankNameEl.style.textShadow = "none";
+        rankNameEl.style.fontWeight = "700";
+      }
     }
     if (rankBarEl) {
       rankBarEl.style.width = `${progressPercent}%`;
@@ -188,6 +222,8 @@ class LearningApp {
 
   updateStreak() {
     // Logic streak cơ bản
+    const streakEl = document.getElementById("dash-streak");
+    if (streakEl) streakEl.innerText = this.stats.streak;
   }
 
   startQuiz(category) {
@@ -272,6 +308,7 @@ class LearningApp {
     if (isCorrect) {
       btnElement.classList.add("correct");
       this.stats.xp += 10;
+      localStorage.setItem("mp_stats", JSON.stringify(this.stats));
       if (typeof confetti === "function") {
         confetti({ particleCount: 30, spread: 50, origin: { y: 0.7 } });
       }

@@ -2031,3 +2031,8 @@ body {
   /* Giữ nguyên các thuộc tính cũ */
   cursor: default; /* Đổi con trỏ chuột về mặc định thay vì bàn tay */
 }
+/* Xử lý riêng cho Rank Apex trong Dark Mode */
+body.dark-mode #rank-name {
+  /* Nếu màu rank quá tối, ta sẽ dùng viền trắng để làm nổi bật */
+  -webkit-text-stroke: 1px rgba(255, 255, 255, 0.2);
+}
