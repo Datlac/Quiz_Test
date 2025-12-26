@@ -746,3 +746,275 @@ body.dark-mode .mode-option-btn {
     padding: 12px;
   }
 }
+/* =========================================
+   REDESIGN: MODERN INTERACTIVE BUTTONS
+   ========================================= */
+
+/* --- 1. OPTION CARD (NÚT ĐÁP ÁN) --- */
+.option-card {
+  /* Hình dáng & Layout */
+  position: relative;
+  padding: 18px 24px;
+  margin-bottom: 16px;
+  border-radius: 24px; /* Bo góc lớn hơn (Pill-like hybrid) */
+  min-height: 60px; /* Đảm bảo touch target >= 48px cho mobile */
+
+  /* Glassmorphism Nền tảng */
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+
+  /* Typography & Flex */
+  display: flex;
+  justify-content: space-between; /* Để icon check/cross dạt sang phải */
+  align-items: center;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-main);
+
+  /* Transitions mượt mà */
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); /* Hiệu ứng nảy (spring) */
+  overflow: hidden; /* Cần cho hiệu ứng Ripple */
+  user-select: none;
+}
+
+/* Hover State: Nâng lên & Glow nhẹ */
+.option-card:hover:not(.disabled) {
+  background: rgba(255, 255, 255, 0.95);
+  transform: translateY(-4px) scale(1.01);
+  border-color: #6e8efb; /* Viền sáng màu chủ đạo */
+  box-shadow: 0 12px 24px rgba(110, 142, 251, 0.15),
+    0 4px 8px rgba(0, 0, 0, 0.02);
+}
+
+/* Active State: Nhấn xuống */
+.option-card:active:not(.disabled) {
+  transform: scale(0.97);
+  background: rgba(255, 255, 255, 0.8);
+}
+
+/* --- TRẠNG THÁI ĐÚNG / SAI (VỚI ICON) --- */
+
+/* Logic: Dùng Pseudo-element ::after để hiện icon mà không cần sửa HTML */
+.option-card.correct,
+.option-card.wrong {
+  padding-right: 50px; /* Chừa chỗ cho icon */
+}
+
+/* Correct Style */
+.option-card.correct {
+  background: linear-gradient(
+    135deg,
+    rgba(209, 250, 229, 0.9),
+    rgba(167, 243, 208, 0.8)
+  ) !important;
+  border-color: #34d399 !important;
+  color: #064e3b !important;
+  box-shadow: 0 8px 20px rgba(16, 185, 129, 0.25);
+}
+
+.option-card.correct::after {
+  content: "\f00c"; /* Mã icon Check của FontAwesome */
+  font-family: "Font Awesome 6 Free", "Font Awesome 5 Free";
+  font-weight: 900;
+  position: absolute;
+  right: 20px;
+  font-size: 1.2rem;
+  color: #059669;
+  animation: iconPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Wrong Style */
+.option-card.wrong {
+  background: linear-gradient(
+    135deg,
+    rgba(254, 226, 226, 0.9),
+    rgba(254, 202, 202, 0.8)
+  ) !important;
+  border-color: #f87171 !important;
+  color: #991b1b !important;
+  box-shadow: 0 8px 20px rgba(239, 68, 68, 0.25);
+}
+
+.option-card.wrong::after {
+  content: "\f00d"; /* Mã icon Xmark của FontAwesome */
+  font-family: "Font Awesome 6 Free", "Font Awesome 5 Free";
+  font-weight: 900;
+  position: absolute;
+  right: 20px;
+  font-size: 1.2rem;
+  color: #dc2626;
+  animation: iconPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes iconPop {
+  0% {
+    transform: scale(0) rotate(-45deg);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+/* --- 2. MODE BUTTONS (START SCREEN) --- */
+.mode-grid {
+  display: grid;
+  gap: 16px;
+  margin-top: 10px;
+}
+
+.mode-option-btn {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 20px;
+
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  border-radius: 24px;
+
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-align: left;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Icon lớn bên trái */
+.mode-option-btn .icon {
+  width: 54px;
+  height: 54px;
+  font-size: 1.8rem;
+  background: white;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.06);
+  transition: transform 0.3s ease;
+}
+
+.mode-option-btn .text {
+  flex: 1;
+}
+
+.mode-option-btn strong {
+  display: block;
+  font-size: 1.15rem;
+  color: var(--text-main);
+  margin-bottom: 4px;
+}
+
+.mode-option-btn span {
+  font-size: 0.9rem;
+  color: var(--text-sub);
+}
+
+/* Hover Effect cho Mode Btn */
+.mode-option-btn:hover {
+  background: rgba(255, 255, 255, 0.9);
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+  border-color: white;
+}
+
+.mode-option-btn:hover .icon {
+  transform: scale(1.1) rotate(-5deg);
+  background: var(--primary-gradient);
+  color: white; /* Nếu icon là text/emoji thì giữ nguyên, nếu là i tag thì đổi màu */
+}
+
+/* --- 3. NÚT "ÔN LẠI CÂU SAI" (REVIEW) --- */
+/* Nút này cần nổi bật như một lời cảnh báo/nhắc nhở */
+.review-btn {
+  background: linear-gradient(135deg, #ff9f43, #ff7675);
+  color: white;
+  border: none;
+  padding: 14px 24px;
+  border-radius: 16px;
+  font-weight: 700;
+  font-size: 1rem;
+
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  box-shadow: 0 8px 20px rgba(255, 118, 117, 0.4);
+  transition: all 0.3s var(--ease-spring);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Hiệu ứng Shine quét qua nút Review */
+.review-btn::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 50%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.4),
+    transparent
+  );
+  transform: skewX(-20deg);
+  animation: shineReview 3s infinite;
+}
+
+@keyframes shineReview {
+  0%,
+  70% {
+    left: -100%;
+  }
+  100% {
+    left: 200%;
+  }
+}
+
+.review-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 25px rgba(255, 118, 117, 0.6);
+}
+
+/* --- DARK MODE ADJUSTMENTS --- */
+body.dark-mode .option-card {
+  background: rgba(30, 41, 59, 0.5);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+body.dark-mode .option-card:hover:not(.disabled) {
+  background: rgba(51, 65, 85, 0.8);
+  border-color: #a777e3;
+}
+body.dark-mode .mode-option-btn {
+  background: rgba(30, 41, 59, 0.5);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+body.dark-mode .mode-option-btn:hover {
+  background: rgba(51, 65, 85, 0.8);
+}
+body.dark-mode .mode-option-btn .icon {
+  background: rgba(255, 255, 255, 0.1);
+  color: white;
+}
+/* --- RIPPLE EFFECT --- */
+.ripple {
+  position: absolute;
+  border-radius: 50%;
+  transform: scale(0);
+  animation: ripple-anim 0.6s linear;
+  background-color: rgba(255, 255, 255, 0.5); /* Màu sóng */
+  pointer-events: none; /* Không chặn click */
+}
+
+@keyframes ripple-anim {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}

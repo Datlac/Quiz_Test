@@ -296,7 +296,14 @@ class LearningApp {
         const btn = document.createElement("button");
         btn.className = "option-card";
         btn.innerText = opt;
-        btn.onclick = () => this.handleAnswer(i, btn);
+
+        // --- THÊM LOGIC RIPPLE VÀO ĐÂY ---
+        btn.onclick = (e) => {
+          createRipple(e); // Tạo hiệu ứng sóng
+          this.handleAnswer(i, btn); // Xử lý đáp án
+        };
+        // ----------------------------------
+
         this.ui.optionsGrid.appendChild(btn);
       });
     }
@@ -779,6 +786,46 @@ class LearningApp {
       // (Tùy chọn) Phát âm thanh click nhẹ
       // this.playClickSound('click');
     });
+    // --- 1. HÀM TẠO HIỆU ỨNG RIPPLE ---
+    function createRipple(event) {
+      const button = event.currentTarget;
+      const circle = document.createElement("span");
+      const diameter = Math.max(button.clientWidth, button.clientHeight);
+      const radius = diameter / 2;
+
+      // Tính toán vị trí click
+      const rect = button.getBoundingClientRect();
+      circle.style.width = circle.style.height = `${diameter}px`;
+      circle.style.left = `${event.clientX - rect.left - radius}px`;
+      circle.style.top = `${event.clientY - rect.top - radius}px`;
+      circle.classList.add("ripple");
+
+      // Xóa ripple cũ (nếu có) để DOM sạch
+      const existingRipple = button.querySelector(".ripple");
+      if (existingRipple) {
+        existingRipple.remove();
+      }
+
+      button.appendChild(circle);
+    }
+
+    // --- 2. GẮN SỰ KIỆN CHO CÁC NÚT ---
+    // Bạn có thể gọi hàm này trong init() hoặc sau khi render nội dung
+    function attachMicroInteractions() {
+      const buttons = document.querySelectorAll(
+        ".option-card, .mode-option-btn, .review-btn, .nav-btn, .hero-btn"
+      );
+
+      buttons.forEach((btn) => {
+        btn.addEventListener("click", function (e) {
+          createRipple(e);
+          // playClickSound(); // Nếu bạn đã có hàm âm thanh
+        });
+      });
+    }
+
+    // Gợi ý: Gọi attachMicroInteractions() sau khi render câu hỏi (loadStep)
+    // hoặc render dashboard để các nút mới sinh ra cũng có hiệu ứng.
   }
 
   // Đừng quên gọi this.setupTheme() trong constructor hoặc hàm init() nhé!
