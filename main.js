@@ -636,21 +636,52 @@ class LearningApp {
   setupTheme() {
     const themeBtn = document.getElementById("theme-toggle");
     if (!themeBtn) return;
-    const isDark = localStorage.getItem("mp_theme") === "dark";
-    if (isDark) {
-      document.body.classList.add("dark-mode");
-      themeBtn.innerHTML = '<i class="fas fa-sun"></i>';
-    }
-    themeBtn.onclick = () => {
-      document.body.classList.toggle("dark-mode");
-      const isDarkModeNow = document.body.classList.contains("dark-mode");
-      if (isDarkModeNow) {
-        themeBtn.innerHTML = '<i class="fas fa-sun"></i>';
-        localStorage.setItem("mp_theme", "dark");
+
+    const icon = themeBtn.querySelector("i");
+    const body = document.body;
+
+    // Hàm cập nhật Icon (Mặt trăng <-> Mặt trời)
+    const updateIcon = (isDark) => {
+      if (isDark) {
+        icon.classList.remove("fa-moon");
+        icon.classList.add("fa-sun");
       } else {
-        themeBtn.innerHTML = '<i class="fas fa-moon"></i>';
-        localStorage.setItem("mp_theme", "light");
+        icon.classList.remove("fa-sun");
+        icon.classList.add("fa-moon");
       }
+    };
+
+    // 1. Tự động Detect (Ưu tiên LocalStorage -> System Preference)
+    const savedTheme = localStorage.getItem("mp_theme");
+    const systemPrefersDark = window.matchMedia(
+      "(prefers-color-scheme: dark)"
+    ).matches;
+
+    if (savedTheme === "dark" || (!savedTheme && systemPrefersDark)) {
+      body.classList.add("dark-mode");
+      updateIcon(true);
+    } else {
+      body.classList.remove("dark-mode");
+      updateIcon(false);
+    }
+
+    // 2. Xử lý sự kiện Click
+    themeBtn.onclick = () => {
+      // Thêm class animation xoay
+      icon.style.transform = "rotate(360deg) scale(0.5)";
+
+      // Đợi nửa giây để đổi giao diện (tạo cảm giác mượt)
+      setTimeout(() => {
+        body.classList.toggle("dark-mode");
+        const isDark = body.classList.contains("dark-mode");
+
+        // Lưu preference
+        localStorage.setItem("mp_theme", isDark ? "dark" : "light");
+
+        // Đổi icon và reset transform
+        updateIcon(isDark);
+        icon.style.transform = "rotate(0deg) scale(1)";
+      }, 200);
     };
   }
 
