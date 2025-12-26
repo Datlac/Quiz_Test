@@ -819,3 +819,190 @@ body.dark-mode .option-card:hover {
   color: #999;
   letter-spacing: 2px;
 }
+/* --- LIVING BACKGROUND CORE --- */
+:root {
+  /* Màu mặc định (Focus/Neutral) */
+  --bg-color-1: #6e8efb; /* Xanh lam */
+  --bg-color-2: #a777e3; /* Tím */
+  --bg-accent: #ffffff; /* Trắng mờ */
+  --anim-speed: 20s; /* Tốc độ mặc định */
+  --blob-opacity: 0.6;
+}
+
+#living-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: -1;
+  overflow: hidden;
+  background: #f8fafd; /* Màu nền gốc */
+  transition: background 3s ease;
+}
+
+.bg-layer {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px); /* Độ mờ tạo cảm giác khói/nước */
+  opacity: var(--blob-opacity);
+  transition: all 3s cubic-bezier(0.4, 0, 0.2, 1); /* CHUYỂN MÀU MƯỢT 3 GIÂY */
+}
+
+/* Layer 1: To nhất, di chuyển chậm */
+.blob-1 {
+  top: -10%;
+  left: -10%;
+  width: 70vw;
+  height: 70vw;
+  background: var(--bg-color-1);
+  animation: float1 var(--anim-speed) infinite alternate;
+}
+
+/* Layer 2: Vừa, di chuyển ngược chiều */
+.blob-2 {
+  bottom: -10%;
+  right: -10%;
+  width: 60vw;
+  height: 60vw;
+  background: var(--bg-color-2);
+  animation: float2 var(--anim-speed) infinite alternate-reverse;
+}
+
+/* Layer 3: Nhỏ, điểm nhấn (Sẽ đổi màu rõ nhất) */
+.blob-3 {
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 40vw;
+  height: 40vw;
+  background: var(--bg-accent);
+  opacity: 0.4;
+  animation: pulse 10s infinite;
+}
+
+/* --- TRẠNG THÁI HỌC TẬP (STATES) --- */
+
+/* 1. Trạng thái "High Streak" (Ấm áp, phấn khởi) */
+#living-bg.state-warm {
+  --bg-color-1: #6e8efb;
+  --bg-color-2: #a777e3;
+  --bg-accent: #ff9f43; /* Cam nhạt xuất hiện */
+  --anim-speed: 10s; /* Chuyển động nhanh hơn chút */
+  --blob-opacity: 0.7; /* Rõ hơn */
+}
+
+/* 2. Trạng thái "Mistake/Focus" (Lạnh, bình tĩnh lại) */
+#living-bg.state-cold {
+  --bg-color-1: #8fa6d1; /* Xanh xám nhạt */
+  --bg-color-2: #95a5a6; /* Xám trung tính */
+  --bg-accent: #ecf0f1; /* Trắng lạnh */
+  --anim-speed: 40s; /* Chuyển động rất chậm */
+  --blob-opacity: 0.4; /* Mờ đi để bớt áp lực */
+}
+
+/* 3. Hiệu ứng Rank Up (Glow nhẹ 1 cái rồi tắt) */
+#living-bg.pulse-rankup .bg-layer {
+  filter: blur(60px) brightness(1.3);
+  transition: 0.5s;
+}
+
+/* --- ANIMATIONS --- */
+@keyframes float1 {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  100% {
+    transform: translate(100px, 50px) rotate(20deg);
+  }
+}
+@keyframes float2 {
+  0% {
+    transform: translate(0, 0) rotate(0deg);
+  }
+  100% {
+    transform: translate(-80px, -60px) rotate(-15deg);
+  }
+}
+@keyframes pulse {
+  0%,
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    transform: translate(-50%, -50%) scale(1.1);
+  }
+}
+
+/* Noise overlay (Tạo texture giấy/film sang trọng) */
+.noise-overlay {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background: url("https://grainy-gradients.vercel.app/noise.svg");
+  opacity: 0.03;
+  pointer-events: none;
+}
+/* --- DARK MODE CONFIGURATION --- */
+
+/* Khi body có class 'dark-mode' */
+body.dark-mode {
+  /* 1. Đổi màu nền gradient sang tông tối (Vũ trụ) */
+  --bg-color-1: #0f2027; /* Xanh đen thẫm */
+  --bg-color-2: #203a43; /* Xanh than */
+  --bg-accent: #2c5364; /* Xám xanh (Accent mờ) */
+  --blob-opacity: 0.4; /* Giảm độ đậm của blob để nền không quá chói */
+
+  /* 2. Đổi màu chữ & Card */
+  --text-main: #ecf0f1; /* Chữ trắng mờ */
+  --glass-bg: rgba(15, 23, 42, 0.6); /* Card chuyển sang màu kính đen */
+  background: #050505; /* Màu nền gốc cực tối */
+}
+
+/* Tùy chỉnh riêng cho các Card trong Dark Mode */
+body.dark-mode .glass-card,
+body.dark-mode .path-card,
+body.dark-mode .rank-card {
+  border: 1px solid rgba(255, 255, 255, 0.1); /* Viền mỏng nhẹ */
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5); /* Bóng đổ đậm hơn */
+}
+
+/* Đổi màu chữ trong Card */
+body.dark-mode h1,
+body.dark-mode h2,
+body.dark-mode h3,
+body.dark-mode h4,
+body.dark-mode p,
+body.dark-mode .path-meta {
+  color: #ecf0f1 !important;
+}
+
+/* Card đáp án */
+body.dark-mode .option-card {
+  background: rgba(255, 255, 255, 0.05); /* Trong suốt mờ */
+  color: #ecf0f1;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+body.dark-mode .option-card:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: #6e8efb;
+}
+
+/* Nút icon theme */
+body.dark-mode #theme-toggle {
+  background: rgba(255, 255, 255, 0.1);
+  color: #f1c40f; /* Mặt trăng màu vàng */
+}
+
+/* Xử lý 2 trạng thái Warm/Cold trong Darkmode (Để không bị chói) */
+body.dark-mode #living-bg.state-warm {
+  --bg-color-1: #2c0e0e; /* Đỏ rượu tối */
+  --bg-color-2: #4a2c2c; /* Nâu đất tối */
+  --bg-accent: #d35400; /* Cam đốm nhỏ */
+}
+
+body.dark-mode #living-bg.state-cold {
+  --bg-color-1: #000000;
+  --bg-color-2: #192a56;
+  --bg-accent: #273c75;
+}

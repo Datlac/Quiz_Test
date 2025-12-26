@@ -1,20 +1,20 @@
 // CẤU HÌNH RANK: PHƯƠNG ÁN 3 (ESPORT / MMO)
 const RANK_SYSTEM = [
-  { threshold: 0, name: "Bronze", color: "#cd7f32" }, // Đồng
-  { threshold: 150, name: "Silver", color: "#bdc3c7" }, // Bạc
-  { threshold: 400, name: "Gold", color: "#f1c40f" }, // Vàng (Sáng)
-  { threshold: 800, name: "Platinum", color: "#00cec9" }, // Bạch kim (Xanh ngọc)
-  { threshold: 1500, name: "Diamond", color: "#74b9ff" }, // Kim cương (Xanh dương sáng)
-  { threshold: 2500, name: "Master", color: "#9b59b6" }, // Cao thủ (Tím)
-  { threshold: 4000, name: "Grandmaster", color: "#d63031" }, // Đại cao thủ (Đỏ)
-  { threshold: 6000, name: "Challenger", color: "#e84393" }, // Thách đấu (Hồng đậm)
-  { threshold: 9000, name: "Immortal", color: "#fdcb6e" }, // Bất tử (Vàng cam)
-  { threshold: 13000, name: "Apex", color: "#2d3436" }, // Đỉnh cao (Đen quyền lực / Hoặc hiệu ứng cầu vồng)
+  { threshold: 0, name: "Bronze", color: "#cd7f32" },
+  { threshold: 150, name: "Silver", color: "#bdc3c7" },
+  { threshold: 400, name: "Gold", color: "#f1c40f" },
+  { threshold: 800, name: "Platinum", color: "#00cec9" },
+  { threshold: 1500, name: "Diamond", color: "#74b9ff" },
+  { threshold: 2500, name: "Master", color: "#9b59b6" },
+  { threshold: 4000, name: "Grandmaster", color: "#d63031" },
+  { threshold: 6000, name: "Challenger", color: "#e84393" },
+  { threshold: 9000, name: "Immortal", color: "#fdcb6e" },
+  { threshold: 13000, name: "Apex", color: "#2d3436" },
 ];
+
 class LearningApp {
   constructor(data) {
     this.allData = data;
-    // Lấy dữ liệu user từ LocalStorage
     this.stats = JSON.parse(localStorage.getItem("mp_stats")) || {
       xp: 0,
       mistakeIds: [],
@@ -30,7 +30,14 @@ class LearningApp {
       isMistakeMode: false,
     };
 
-    // 1. Cache các màn hình (Routing)
+    // --- MỚI 1: State cho Living Background ---
+    this.sessionState = {
+      currentStreak: 0,
+      consecutiveWrong: 0,
+    };
+    this.bgElement = document.getElementById("living-bg");
+    // ------------------------------------------
+
     this.screens = {
       landing: document.getElementById("view-landing"),
       dashboard: document.getElementById("view-dashboard"),
@@ -38,8 +45,6 @@ class LearningApp {
       result: document.getElementById("view-result"),
     };
 
-    // --- PHẦN BỊ THIẾU CẦN THÊM VÀO ---
-    // 2. Cache các thành phần UI trong Quiz (Để loadStep sử dụng)
     this.ui = {
       questionText: document.getElementById("question-text"),
       optionsGrid: document.getElementById("options-grid"),
@@ -48,9 +53,9 @@ class LearningApp {
       progressText: document.getElementById("progress-text"),
       nextBtn: document.getElementById("next-btn"),
     };
-    // ----------------------------------
 
     this.init();
+    this.setupTheme();
   }
 
   init() {
@@ -62,7 +67,6 @@ class LearningApp {
     this.updateStreak();
   }
 
-  // --- NAVIGATION ---
   navigate(screenName) {
     Object.values(this.screens).forEach((el) => {
       if (el) el.style.display = "none";
@@ -88,34 +92,29 @@ class LearningApp {
     this.navigate("dashboard");
   }
 
-  // --- DASHBOARD ---
   renderDashboard() {
-    // --- PHẦN 1: LOGIC RANK MỚI ---
+    // 1. Logic Rank
     const currentXP = this.stats.xp;
     let currentRank = RANK_SYSTEM[0];
-    let nextRank = RANK_SYSTEM[RANK_SYSTEM.length - 1]; // Mặc định là max
+    let nextRank = RANK_SYSTEM[RANK_SYSTEM.length - 1];
     let progressPercent = 100;
 
-    // Tìm Rank hiện tại và Rank tiếp theo
     for (let i = 0; i < RANK_SYSTEM.length; i++) {
       if (currentXP >= RANK_SYSTEM[i].threshold) {
         currentRank = RANK_SYSTEM[i];
         if (i < RANK_SYSTEM.length - 1) {
           nextRank = RANK_SYSTEM[i + 1];
-          // Tính % tiến độ đến cấp tiếp theo
           const currentLevelXP = currentXP - currentRank.threshold;
           const nextLevelNeed = nextRank.threshold - currentRank.threshold;
           progressPercent = Math.floor((currentLevelXP / nextLevelNeed) * 100);
         } else {
-          // Đã max cấp
           progressPercent = 100;
           nextRank = { name: "Max Level", threshold: currentXP };
         }
       }
     }
-    // -----------------------------
 
-    // Render Stats cũ
+    // 2. Render Stats
     const xpEl = document.getElementById("dash-xp");
     if (xpEl) xpEl.innerText = this.stats.xp;
 
@@ -134,7 +133,7 @@ class LearningApp {
         this.stats.mistakeIds.length > 0 ? "flex" : "none";
     }
 
-    // --- PHẦN 2: RENDER UI RANK ---
+    // 3. Render UI Rank
     const rankNameEl = document.getElementById("rank-name");
     const rankBarEl = document.getElementById("rank-progress-bar");
     const rankTextEl = document.getElementById("rank-next-text");
@@ -148,17 +147,20 @@ class LearningApp {
       rankBarEl.style.backgroundColor = currentRank.color;
     }
     if (rankTextEl) {
-      if (progressPercent === 100 && currentRank.threshold === 2000) {
-        rankTextEl.innerText = "Bạn đã đạt cấp độ tối đa!";
+      // Logic fix hiển thị Apex
+      const maxRankThreshold = RANK_SYSTEM[RANK_SYSTEM.length - 1].threshold;
+      if (currentXP >= maxRankThreshold) {
+        rankTextEl.innerHTML = "👑 Đỉnh cao vọng trọng! Bạn là huyền thoại.";
+        rankTextEl.style.color = "#ffd700";
       } else {
         rankTextEl.innerText = `Còn ${
           nextRank.threshold - currentXP
         } XP để lên ${nextRank.name}`;
+        rankTextEl.style.color = "";
       }
     }
-    // -----------------------------
 
-    // Render Learning Paths (Giữ nguyên code cũ)
+    // 4. Render Learning Paths
     const pathContainer = document.getElementById("path-container");
     if (pathContainer) {
       pathContainer.innerHTML = "";
@@ -168,27 +170,26 @@ class LearningApp {
         card.className = "path-card";
         card.onclick = () => this.startQuiz(key);
         card.innerHTML = `
-                    <h4>🚀 ${key.toUpperCase()}</h4>
-                    <div class="path-meta">
-                        <span><i class="fas fa-list"></i> ${count} Bài tập</span>
-                        <span><i class="fas fa-clock"></i> ~${Math.ceil(
-                          count * 0.5
-                        )} phút</span>
-                    </div>
-                    <div style="margin-top: 15px; width: 100%; height: 6px; background: #eee; border-radius: 3px;">
-                        <div style="width: 0%; height: 100%; background: var(--primary-glow); border-radius: 3px;"></div>
-                    </div>
-                `;
+            <h4>🚀 ${key.toUpperCase()}</h4>
+            <div class="path-meta">
+                <span><i class="fas fa-list"></i> ${count} Bài tập</span>
+                <span><i class="fas fa-clock"></i> ~${Math.ceil(
+                  count * 0.5
+                )} phút</span>
+            </div>
+            <div style="margin-top: 15px; width: 100%; height: 6px; background: #eee; border-radius: 3px;">
+                <div style="width: 0%; height: 100%; background: var(--primary-glow); border-radius: 3px;"></div>
+            </div>
+        `;
         pathContainer.appendChild(card);
       });
     }
   }
 
   updateStreak() {
-    // Logic streak cơ bản (có thể mở rộng sau)
+    // Logic streak cơ bản
   }
 
-  // --- QUIZ LOGIC ---
   startQuiz(category) {
     this.state.isMistakeMode = false;
     this.state.questions = [...this.allData[category]].sort(
@@ -209,6 +210,11 @@ class LearningApp {
   resetFlow() {
     this.state.currentIdx = 0;
     this.state.history = [];
+
+    // Reset trạng thái background mỗi khi bắt đầu quiz mới
+    this.sessionState = { currentStreak: 0, consecutiveWrong: 0 };
+    this.setBgState("normal");
+
     this.navigate("quiz");
     this.loadStep();
   }
@@ -216,7 +222,6 @@ class LearningApp {
   loadStep() {
     const q = this.state.questions[this.state.currentIdx];
 
-    // 1. Reset UI (Kiểm tra an toàn để tránh lỗi null)
     if (this.ui.feedbackArea) this.ui.feedbackArea.style.display = "none";
 
     if (this.ui.optionsGrid) {
@@ -228,7 +233,6 @@ class LearningApp {
       this.ui.questionText.innerText = q.q;
     }
 
-    // 2. Cập nhật tiến trình
     if (this.ui.progressText) {
       this.ui.progressText.innerText = `Câu ${this.state.currentIdx + 1} / ${
         this.state.questions.length
@@ -236,7 +240,6 @@ class LearningApp {
     }
     this.updateProgress();
 
-    // 3. Render Options
     if (this.ui.optionsGrid) {
       q.options.forEach((opt, i) => {
         const btn = document.createElement("button");
@@ -248,6 +251,7 @@ class LearningApp {
     }
   }
 
+  // --- MỚI 2: Logic xử lý câu trả lời tích hợp Nền Sống ---
   handleAnswer(idx, btnElement) {
     const q = this.state.questions[this.state.currentIdx];
     const isCorrect = idx === q.a;
@@ -276,6 +280,16 @@ class LearningApp {
           (id) => id !== q.id
         );
       }
+
+      // === LOGIC NỀN: ĐÚNG ===
+      this.sessionState.currentStreak++;
+      this.sessionState.consecutiveWrong = 0;
+
+      if (this.sessionState.currentStreak >= 3) {
+        this.setBgState("warm");
+      } else {
+        this.setBgState("normal");
+      }
     } else {
       btnElement.classList.add("wrong");
       if (this.ui.optionsGrid && this.ui.optionsGrid.children[q.a]) {
@@ -284,6 +298,16 @@ class LearningApp {
 
       if (!this.stats.mistakeIds.includes(q.id)) {
         this.stats.mistakeIds.push(q.id);
+      }
+
+      // === LOGIC NỀN: SAI ===
+      this.sessionState.consecutiveWrong++;
+      this.sessionState.currentStreak = 0;
+
+      if (this.sessionState.consecutiveWrong >= 2) {
+        this.setBgState("cold");
+      } else {
+        this.setBgState("normal");
       }
     }
 
@@ -307,6 +331,20 @@ class LearningApp {
     }
   }
 
+  // --- MỚI 3: Hàm Helper đổi màu nền ---
+  setBgState(state) {
+    if (!this.bgElement) return;
+
+    // Xóa hết class trạng thái cũ
+    this.bgElement.classList.remove("state-warm", "state-cold");
+
+    if (state === "warm") {
+      this.bgElement.classList.add("state-warm");
+    } else if (state === "cold") {
+      this.bgElement.classList.add("state-cold");
+    }
+  }
+
   nextStep() {
     this.state.currentIdx++;
     if (this.state.currentIdx < this.state.questions.length) {
@@ -324,13 +362,13 @@ class LearningApp {
     }
   }
 
+  // --- MỚI 4: Hiệu ứng kết thúc ---
   endQuiz() {
     const correctCount = this.state.history.filter((h) => h.isCorrect).length;
     const total = this.state.questions.length;
 
     const resultDiv = document.getElementById("result-content");
     if (resultDiv) {
-      // Tạo map kết quả (Xanh/Đỏ)
       const mapHTML = this.state.history
         .map(
           (h, i) => `
@@ -363,6 +401,42 @@ class LearningApp {
 
     this.navigate("result");
     localStorage.setItem("mp_stats", JSON.stringify(this.stats));
+
+    // Hiệu ứng Pulse cuối cùng
+    if (this.bgElement) {
+      this.bgElement.classList.add("pulse-rankup");
+      setTimeout(() => {
+        this.bgElement.classList.remove("pulse-rankup");
+        this.setBgState("normal");
+      }, 2000);
+    }
+  }
+  // --- LOGIC DARK MODE ---
+  setupTheme() {
+    const themeBtn = document.getElementById("theme-toggle");
+    if (!themeBtn) return;
+
+    // 1. Kiểm tra LocalStorage xem user đã chọn dark mode chưa
+    const isDark = localStorage.getItem("mp_theme") === "dark";
+    if (isDark) {
+      document.body.classList.add("dark-mode");
+      themeBtn.innerHTML = '<i class="fas fa-sun"></i>'; // Đổi icon thành mặt trời
+    }
+
+    // 2. Bắt sự kiện click
+    themeBtn.onclick = () => {
+      document.body.classList.toggle("dark-mode");
+      const isDarkModeNow = document.body.classList.contains("dark-mode");
+
+      // Đổi icon & Lưu vào bộ nhớ
+      if (isDarkModeNow) {
+        themeBtn.innerHTML = '<i class="fas fa-sun"></i>';
+        localStorage.setItem("mp_theme", "dark");
+      } else {
+        themeBtn.innerHTML = '<i class="fas fa-moon"></i>';
+        localStorage.setItem("mp_theme", "light");
+      }
+    };
   }
 }
 
