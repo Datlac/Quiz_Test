@@ -120,63 +120,75 @@ class LearningApp {
   }
 
   // --- CẬP NHẬT RENDER DASHBOARD (GIAO DIỆN LEARNING HUB) ---
+  // --- REDESIGN: DASHBOARD LEARNING HUB ---
   renderDashboard() {
-    const dashboardHeader = document.getElementById(
-      "dashboard-header-container"
-    ); // Tạo div này trong HTML nếu chưa có, hoặc append vào view-dashboard
-    const pathContainer = document.getElementById("path-container");
-    const mistakeBanner = document.getElementById("mistake-alert");
-
-    // 1. Render Greeting (Chào hỏi cá nhân hóa)
+    // 1. DATA CHUẨN BỊ
     const hour = new Date().getHours();
     let greeting = "Chào buổi sáng";
     if (hour >= 12 && hour < 18) greeting = "Chào buổi chiều";
     else if (hour >= 18) greeting = "Chào buổi tối";
 
-    // Tìm hoặc tạo khu vực Greeting ngay đầu Dashboard
-    let welcomeSection = document.getElementById("welcome-section");
-    if (!welcomeSection && pathContainer) {
-      welcomeSection = document.createElement("div");
-      welcomeSection.id = "welcome-section";
-      pathContainer.parentNode.insertBefore(welcomeSection, pathContainer);
-    }
+    const currentXP = this.stats.xp;
+    const currentRank = getRankByXP(currentXP);
 
-    if (welcomeSection) {
-      welcomeSection.innerHTML = `
-            <div class="welcome-header">
-                <div>
-                    <h1 class="greeting-text">${greeting}, Learner! 👋</h1>
-                    <p class="subtitle">Sẵn sàng chinh phục kiến thức hôm nay chưa?</p>
+    // 2. RENDER HEADER (Greeting + Mini Stats)
+    const headerEl = document.getElementById("dashboard-header");
+    if (headerEl) {
+      headerEl.innerHTML = `
+            <div class="welcome-row">
+                <div class="greeting-col">
+                    <span class="sub-greet">${new Date().toLocaleDateString(
+                      "vi-VN",
+                      { weekday: "long", day: "numeric", month: "long" }
+                    )}</span>
+                    <h1>${greeting}, Learner!</h1>
                 </div>
-                <div class="streak-pill">
-                    <i class="fas fa-fire"></i> 
-                    <span>${this.stats.streak} Ngày</span>
+                <div class="user-badge" onclick="app.toggleSidebar()">
+                    <div class="avatar-circle">
+                        <i class="fas fa-user-astronaut"></i>
+                    </div>
+                    <div class="badge-info">
+                        <span class="rank-name" style="color: ${
+                          currentRank.color
+                        }">${currentRank.name}</span>
+                        <span class="xp-count">${currentXP} XP</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="streak-bar-mini">
+                <div class="fire-icon ${this.stats.streak > 0 ? "active" : ""}">
+                    <i class="fas fa-fire"></i>
+                </div>
+                <div class="streak-info">
+                    <strong>${this.stats.streak} Ngày Streak</strong>
+                    <span>Giữ lửa học tập nhé! 🔥</span>
                 </div>
             </div>
         `;
     }
 
-    // 2. Render Mistake Hero (Nút ôn tập nổi bật)
-    // Lấy top câu sai nhiều nhất để hiển thị
+    // 3. RENDER MISTAKE HERO (Nút ôn tập nổi bật)
+    const mistakeBanner = document.getElementById("mistake-alert");
     const allStats = Object.entries(this.stats.questionStats);
     const weakQuestions = allStats.filter(([id, s]) => s.wrong > 0);
 
     if (mistakeBanner) {
       if (weakQuestions.length > 0) {
-        mistakeBanner.className = "mistake-hero"; // Class mới xịn hơn
+        mistakeBanner.className = "mistake-hero";
         mistakeBanner.style.display = "flex";
         mistakeBanner.innerHTML = `
-                <div class="mistake-info">
-                    <div class="icon-box warning">
-                        <i class="fas fa-exclamation-triangle"></i>
+                <div class="mistake-content">
+                    <div class="mistake-icon-box">
+                        <i class="fas fa-tools"></i>
                     </div>
                     <div>
-                        <h4>Cần ôn tập gấp!</h4>
-                        <p>Bạn có <strong style="color: #e17055">${weakQuestions.length} câu hỏi</strong> cần xem lại.</p>
+                        <h4>Cần bảo trì kiến thức!</h4>
+                        <p>Bạn đang hổng <strong style="color: #e17055">${weakQuestions.length} câu hỏi</strong>. Trám lại ngay nào.</p>
                     </div>
                 </div>
                 <button class="review-btn" onclick="app.startMistakeMode()">
-                    Chữa lỗi ngay <i class="fas fa-arrow-right"></i>
+                    Sửa lỗi ngay <i class="fas fa-arrow-right"></i>
                 </button>
             `;
       } else {
@@ -184,62 +196,73 @@ class LearningApp {
       }
     }
 
-    // 3. Render Course Cards (Danh sách bài học)
+    // 4. RENDER COURSE CARDS (Lưới bài học hiện đại)
+    const pathContainer = document.getElementById("path-container");
     if (pathContainer) {
-      pathContainer.className = "course-grid"; // Đổi class để CSS mới ăn vào
       pathContainer.innerHTML = "";
 
       Object.keys(this.allData).forEach((key) => {
         const count = this.allData[key].length;
 
-        // Chọn icon và màu gradient dựa trên tên bài học (Example logic)
-        let icon = "fa-book";
-        let gradientClass = "grad-blue"; // Mặc định
-        let label = "General Knowledge";
+        // Cấu hình giao diện cho từng môn
+        let config = { icon: "fa-book-open", color: "blue", label: "General" };
 
         if (key.toLowerCase().includes("hci")) {
-          icon = "fa-laptop-code";
-          gradientClass = "grad-purple";
-          label = "UX & Design";
+          config = {
+            icon: "fa-laptop-code",
+            color: "purple",
+            label: "UX & Design",
+          };
         } else if (
           key.toLowerCase().includes("english") ||
           key.toLowerCase().includes("tiếng anh")
         ) {
-          icon = "fa-language";
-          gradientClass = "grad-green";
-          label = "Language Skills";
+          config = { icon: "fa-language", color: "green", label: "Language" };
+        } else if (
+          key.toLowerCase().includes("history") ||
+          key.toLowerCase().includes("lịch sử")
+        ) {
+          config = { icon: "fa-landmark", color: "orange", label: "History" };
         }
 
         const card = document.createElement("div");
-        card.className = `course-card ${gradientClass}`;
+        card.className = `course-card grad-${config.color}`;
         card.onclick = () => this.startQuiz(key);
 
-        // HTML Card mới
+        // Progress giả lập (Bạn có thể thay bằng logic thật nếu đã lưu completedLessons)
+        // Ví dụ: Random progress để demo giao diện
+        const progressPercent = Math.floor(Math.random() * 30) + 10;
+
         card.innerHTML = `
-            <div class="card-bg-decoration"></div>
-            <div class="card-icon">
-                <i class="fas ${icon}"></i>
-            </div>
-            <div class="card-content">
-                <span class="card-label">${label}</span>
-                <h3>${key.toUpperCase()}</h3>
-                <div class="card-meta">
-                    <span><i class="fas fa-layer-group"></i> ${count} Questions</span>
-                    <span><i class="fas fa-stopwatch"></i> ~${Math.ceil(
-                      count * 0.8
-                    )}m</span>
+            <div class="card-bg-blob"></div>
+            <div class="card-header">
+                <div class="card-icon">
+                    <i class="fas ${config.icon}"></i>
+                </div>
+                <div class="card-arrow">
+                    <i class="fas fa-chevron-right"></i>
                 </div>
             </div>
-            <div class="play-indicator">
-                <i class="fas fa-play"></i>
+            
+            <div class="card-body">
+                <span class="card-tag">${config.label}</span>
+                <h3>${key.toUpperCase()}</h3>
+                
+                <div class="card-meta">
+                    <span><i class="fas fa-layer-group"></i> ${count} Câu</span>
+                    <span><i class="fas fa-clock"></i> ~${Math.ceil(
+                      count * 0.5
+                    )}p</span>
+                </div>
+            </div>
+
+            <div class="card-progress">
+                <div class="progress-bar" style="width: ${progressPercent}%"></div>
             </div>
         `;
         pathContainer.appendChild(card);
       });
     }
-
-    // Cập nhật các chỉ số Stats nhỏ khác nếu cần (giữ nguyên logic cũ của bạn)
-    this.updateStreak();
   }
 
   updateStreak() {

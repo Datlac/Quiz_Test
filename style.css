@@ -1018,3 +1018,334 @@ body.dark-mode .mode-option-btn .icon {
     opacity: 0;
   }
 }
+/* --- DASHBOARD REDESIGN (MODERN FLOW) --- */
+
+/* 1. Header Area */
+.welcome-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.sub-greet {
+  display: block;
+  font-size: 0.9rem;
+  color: var(--text-sub);
+  text-transform: uppercase;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.greeting-col h1 {
+  font-size: 1.8rem;
+  line-height: 1.2;
+  background: linear-gradient(90deg, var(--text-main) 0%, var(--text-sub) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* User Badge (Góc phải) */
+.user-badge {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.5);
+  padding: 8px 16px 8px 8px;
+  border-radius: 50px;
+  border: 1px solid var(--glass-border);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.user-badge:hover {
+  transform: scale(1.05);
+  background: white;
+}
+
+.avatar-circle {
+  width: 40px;
+  height: 40px;
+  background: var(--primary-gradient);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 1.1rem;
+}
+
+.badge-info {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+.rank-name {
+  font-size: 0.85rem;
+  font-weight: 800;
+}
+.xp-count {
+  font-size: 0.75rem;
+  color: var(--text-sub);
+}
+
+/* Streak Bar Mini */
+.streak-bar-mini {
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 16px;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 30px;
+  border: 1px solid var(--glass-border);
+}
+
+.fire-icon {
+  font-size: 1.5rem;
+  color: #dfe6e9;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.1));
+}
+.fire-icon.active {
+  color: #e17055;
+  animation: pulseFire 2s infinite;
+}
+@keyframes pulseFire {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.streak-info strong {
+  display: block;
+  color: var(--text-main);
+}
+.streak-info span {
+  font-size: 0.85rem;
+  color: var(--text-sub);
+}
+
+/* 2. Mistake Hero Banner */
+.mistake-hero {
+  background: linear-gradient(
+    135deg,
+    rgba(255, 118, 117, 0.1),
+    rgba(214, 48, 49, 0.05)
+  );
+  border: 1px solid rgba(255, 118, 117, 0.3);
+  border-radius: 24px;
+  padding: 20px;
+  margin-bottom: 35px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 15px;
+  animation: slideDown 0.4s ease;
+}
+
+.mistake-content {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+.mistake-icon-box {
+  width: 48px;
+  height: 48px;
+  background: #ff7675;
+  color: white;
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  box-shadow: 0 5px 15px rgba(255, 118, 117, 0.3);
+}
+
+.review-btn {
+  background: #d63031;
+  color: white;
+  border: none;
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 5px 15px rgba(214, 48, 49, 0.3);
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.review-btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(214, 48, 49, 0.4);
+}
+
+/* 3. Course Grid & Modern Cards */
+.section-title {
+  margin-bottom: 20px;
+  font-size: 1.2rem;
+  color: var(--text-main);
+}
+.course-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+}
+
+.course-card {
+  background: rgba(255, 255, 255, 0.6);
+  border: 1px solid white;
+  border-radius: 24px;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  min-height: 200px;
+}
+
+/* Gradient Background nhẹ */
+.course-card::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.8) 100%
+  );
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Theme Colors */
+.course-card.grad-purple {
+  background: linear-gradient(135deg, #e0c3fc 0%, #8ec5fc 100%);
+}
+.course-card.grad-green {
+  background: linear-gradient(135deg, #d4fc79 0%, #96e6a1 100%);
+}
+.course-card.grad-blue {
+  background: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);
+}
+.course-card.grad-orange {
+  background: linear-gradient(135deg, #f6d365 0%, #fda085 100%);
+}
+
+.course-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  z-index: 2;
+  margin-bottom: 15px;
+}
+.card-icon {
+  width: 50px;
+  height: 50px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+}
+.grad-purple .card-icon {
+  color: #8e44ad;
+}
+.grad-green .card-icon {
+  color: #27ae60;
+}
+.grad-blue .card-icon {
+  color: #2980b9;
+}
+
+.card-arrow {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  color: var(--text-main);
+  transition: all 0.3s;
+}
+.course-card:hover .card-arrow {
+  background: white;
+  transform: rotate(-45deg);
+}
+
+.card-body {
+  z-index: 2;
+}
+.card-tag {
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  background: rgba(255, 255, 255, 0.6);
+  padding: 4px 10px;
+  border-radius: 20px;
+  display: inline-block;
+  margin-bottom: 8px;
+  color: var(--text-sub);
+}
+
+.card-body h3 {
+  font-size: 1.3rem;
+  margin-bottom: 5px;
+  color: #2d3436;
+}
+.card-meta {
+  display: flex;
+  gap: 12px;
+  font-size: 0.85rem;
+  color: #636e72;
+  font-weight: 500;
+}
+
+.card-progress {
+  height: 6px;
+  background: rgba(255, 255, 255, 0.4);
+  border-radius: 10px;
+  margin-top: 20px;
+  overflow: hidden;
+  z-index: 2;
+}
+.progress-bar {
+  height: 100%;
+  background: white;
+  opacity: 0.8;
+  border-radius: 10px;
+}
+
+/* Dark Mode Fixes */
+body.dark-mode .course-card {
+  opacity: 0.9;
+  border: none;
+}
+body.dark-mode .card-body h3 {
+  color: #2d3436;
+} /* Giữ màu chữ tối trên nền sáng của card */
+body.dark-mode .greeting-col h1 {
+  background: linear-gradient(90deg, #fff 0%, #cbd5e1 100%);
+  -webkit-background-clip: text;
+}
