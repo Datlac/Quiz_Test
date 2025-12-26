@@ -483,6 +483,7 @@ class LearningApp {
   }
 
   // --- END QUIZ: PHIÊN BẢN KNOWLEDGE GALAXY ---
+  // --- END QUIZ: PHIÊN BẢN KNOWLEDGE GALAXY ---
   endQuiz() {
     const correctCount = this.state.history.filter((h) => h.isCorrect).length;
     const total = this.state.questions.length;
