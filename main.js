@@ -319,6 +319,9 @@ class LearningApp {
             : ""
         }
     `;
+      if (!isLoggedIn) {
+        headerEl.innerHTML += `<button class="hero-btn" onclick="window.authServices.login()" style="margin-bottom:20px; background:#4285F4"><i class="fab fa-google"></i> Đăng nhập lưu tiến độ</button>`;
+      }
     }
   }
 
