@@ -295,6 +295,7 @@ class LearningApp {
     }
     // 1. Header Logic
     // Kiểm tra xem có profile chưa (từ Firebase)
+    const isLoggedIn = !!this.userProfile;
     const userAvatar = this.userProfile
       ? `<img src="${this.userProfile.photo}" style="width:100%; height:100%; border-radius:50%">`
       : `<i class="fas fa-user-astronaut"></i>`;

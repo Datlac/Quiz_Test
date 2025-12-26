@@ -290,23 +290,26 @@
 
     <script type="module">
       import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+      // 1. Chỉ lấy các hàm xác thực từ firebase-auth
       import {
         getAuth,
         GoogleAuthProvider,
         signInWithPopup,
         signOut,
         onAuthStateChanged,
-        collection, // <-- Mới
-        query, // <-- Mới
-        orderBy, // <-- Mới
-        limit, // <-- Mới
-        getDocs, // <-- Mới
       } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+      // 2. Chuyển collection, query... xuống firebase-firestore
       import {
         getFirestore,
         doc,
         getDoc,
         setDoc,
+        collection, // <-- Chuyển xuống đây
+        query, // <-- Chuyển xuống đây
+        orderBy, // <-- Chuyển xuống đây
+        limit, // <-- Chuyển xuống đây
+        getDocs, // <-- Chuyển xuống đây
       } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
       // Dán config bạn vừa copy ở Bước 2 vào đây
