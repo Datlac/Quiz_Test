@@ -209,6 +209,7 @@ class LearningApp {
   }
 
   // --- FEATURE: DASHBOARD ---
+  // --- FEATURE: DASHBOARD ---
   renderDashboard() {
     const headerEl = document.getElementById("dashboard-header");
     const pathContainer = document.getElementById("path-container");
@@ -223,32 +224,59 @@ class LearningApp {
         : "Chào buổi tối";
     const rank = getRankByXP(this.stats.xp);
 
-    // 1. Header
+    // 1. Header & Login Logic
+    // Kiểm tra xem có profile chưa
+    const isLoggedIn = !!this.userProfile;
+
+    // Avatar: Nếu có ảnh thì hiện ảnh, không thì hiện icon phi hành gia
+    const userAvatar = isLoggedIn
+      ? `<img src="${this.userProfile.photo}" style="width:100%; height:100%; border-radius:50%">`
+      : `<i class="fas fa-user-astronaut"></i>`;
+
+    const userName = isLoggedIn ? this.userProfile.name : "Khách";
+
+    // Hành động khi bấm vào badge: Login (nếu chưa) hoặc Sidebar (nếu rồi)
+    const loginAction = isLoggedIn
+      ? "app.toggleSidebar()"
+      : "window.authServices.login()";
+
     if (headerEl) {
       headerEl.innerHTML = `
             <div class="welcome-header">
                 <div>
-                    <h1>${greeting},<br/>Learner!</h1>
+                    <h1>${greeting},<br/>${userName}!</h1>
                     <p class="subtitle">Sẵn sàng bứt phá hôm nay?</p>
                 </div>
-                <div class="user-badge" onclick="app.toggleSidebar()">
-                    <div class="avatar"><i class="fas fa-user-astronaut"></i></div>
+                <div class="user-badge" onclick="${loginAction}">
+                    <div class="avatar">${userAvatar}</div>
                     <div style="display:flex; flex-direction:column; line-height:1.2">
-                        <span style="font-weight:700; font-size:0.9rem; color:${rank.color}">${rank.name}</span>
-                        <span style="font-size:0.75rem; opacity:0.7">${this.stats.xp} XP</span>
+                        <span style="font-weight:700; font-size:0.9rem; color:${
+                          rank.color
+                        }">${rank.name}</span>
+                        <span style="font-size:0.75rem; opacity:0.7">${
+                          this.stats.xp
+                        } XP</span>
                     </div>
                 </div>
             </div>
+            
+            ${
+              !isLoggedIn
+                ? `<button class="hero-btn" onclick="window.authServices.login()" style="margin-bottom:20px; background:#4285F4">
+                    <i class="fab fa-google"></i> Đăng nhập với Google để lưu tiến độ
+                 </button>`
+                : ""
+            }
         `;
     }
 
-    // 2. Mistake Banner
+    // 2. Mistake Banner (Giữ nguyên)
     const allStats = Object.entries(this.stats.questionStats || {});
     const weakQuestions = allStats.filter(([id, s]) => s.wrong > 0);
 
     if (mistakeBanner) {
       if (weakQuestions.length > 0) {
-        mistakeBanner.className = "mistake-hero"; // Cần CSS từ bước trước
+        mistakeBanner.className = "mistake-hero";
         mistakeBanner.style.display = "flex";
         mistakeBanner.innerHTML = `
                 <div class="mistake-content">
@@ -265,7 +293,7 @@ class LearningApp {
       }
     }
 
-    // 3. Grid
+    // 3. Grid (Giữ nguyên)
     if (pathContainer) {
       pathContainer.innerHTML = "";
       Object.keys(this.allData).forEach((key) => {
@@ -292,50 +320,6 @@ class LearningApp {
             `;
         pathContainer.appendChild(card);
       });
-    }
-    // 1. Header Logic
-    // Kiểm tra xem có profile chưa (từ Firebase)
-    const isLoggedIn = !!this.userProfile;
-    const userAvatar = this.userProfile
-      ? `<img src="${this.userProfile.photo}" style="width:100%; height:100%; border-radius:50%">`
-      : `<i class="fas fa-user-astronaut"></i>`;
-
-    const userName = this.userProfile ? this.userProfile.name : "Khách";
-    const loginAction = this.userProfile
-      ? ""
-      : "onclick='window.authServices.login()'"; // Nếu chưa login thì bấm vào để login
-
-    if (headerEl) {
-      headerEl.innerHTML = `
-        <div class="welcome-header">
-            <div>
-                <h1>${greeting},<br/>${userName}!</h1> <p class="subtitle">Sẵn sàng bứt phá hôm nay?</p>
-            </div>
-            
-            <div class="user-badge" ${loginAction}>
-                <div class="avatar">${userAvatar}</div>
-                <div style="display:flex; flex-direction:column; line-height:1.2">
-                    <span style="font-weight:700; font-size:0.9rem; color:${
-                      rank.color
-                    }">${rank.name}</span>
-                    <span style="font-size:0.75rem; opacity:0.7">${
-                      this.stats.xp
-                    } XP</span>
-                </div>
-            </div>
-        </div>
-        
-        ${
-          !this.userProfile
-            ? `<button class="hero-btn" onclick="window.authServices.login()" style="margin-bottom:20px; background:#4285F4">
-             <i class="fab fa-google"></i> Đăng nhập với Google để lưu tiến độ
-           </button>`
-            : ""
-        }
-    `;
-      if (!isLoggedIn) {
-        headerEl.innerHTML += `<button class="hero-btn" onclick="window.authServices.login()" style="margin-bottom:20px; background:#4285F4"><i class="fab fa-google"></i> Đăng nhập lưu tiến độ</button>`;
-      }
     }
   }
 
