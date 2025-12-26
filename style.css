@@ -1675,3 +1675,112 @@ body.dark-mode .streak-bar-mini {
   /* Đảm bảo nội dung bên trong card không bị dính */
   justify-content: space-between;
 }
+/* --- LEADERBOARD STYLES --- */
+.leaderboard-list {
+  max-height: 400px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-right: 5px;
+}
+
+.lb-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 15px;
+  background: rgba(255, 255, 255, 0.5);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  transition: transform 0.2s;
+}
+.lb-item:hover {
+  transform: scale(1.02);
+  background: rgba(255, 255, 255, 0.8);
+}
+
+/* Top 3 Highlighting */
+.rank-1 {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 215, 0, 0.2),
+    rgba(255, 255, 255, 0.5)
+  );
+  border-color: #ffd700;
+}
+.rank-2 {
+  background: linear-gradient(
+    90deg,
+    rgba(192, 192, 192, 0.2),
+    rgba(255, 255, 255, 0.5)
+  );
+  border-color: #c0c0c0;
+}
+.rank-3 {
+  background: linear-gradient(
+    90deg,
+    rgba(205, 127, 50, 0.2),
+    rgba(255, 255, 255, 0.5)
+  );
+  border-color: #cd7f32;
+}
+
+.lb-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.lb-rank {
+  font-weight: 800;
+  font-size: 1.2rem;
+  width: 30px;
+  text-align: center;
+}
+.lb-avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid white;
+}
+.lb-avatar-placeholder {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: #ddd;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lb-info {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+.lb-name {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--text-main);
+}
+.lb-streak {
+  font-size: 0.8rem;
+  color: #e17055;
+  font-weight: 600;
+}
+
+.lb-xp {
+  font-weight: 800;
+  color: #6c5ce7;
+  font-size: 1.1rem;
+}
+
+/* Scrollbar đẹp cho list */
+.leaderboard-list::-webkit-scrollbar {
+  width: 6px;
+}
+.leaderboard-list::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 10px;
+}

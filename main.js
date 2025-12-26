@@ -99,8 +99,8 @@ class LearningApp {
     }
     // 2. --- MỚI: Lưu Cloud nếu đã đăng nhập ---
     if (this.userProfile && window.authServices) {
-        // Gọi hàm saveProgress chúng ta vừa viết ở index.html
-        window.authServices.saveProgress(this.userProfile.uid, this.stats);
+      // Gọi hàm saveProgress chúng ta vừa viết ở index.html
+      window.authServices.saveProgress(this.userProfile.uid, this.stats);
     }
   }
 
@@ -126,7 +126,7 @@ class LearningApp {
     this.attachGlobalEvents();
     // THÊM: Kết nối với Firebase Auth (nếu script đã load)
     if (window.authServices) {
-      window.authServices.monitorAuth((user) => {
+      window.authServices.monitorAuth(async (user) => {
         if (user) {
           // Người dùng đã đăng nhập -> Lưu info vào stats để dùng
           this.userProfile = {
@@ -138,10 +138,10 @@ class LearningApp {
           // --- MỚI: Tải dữ liệu từ Cloud ---
           const cloudData = await window.authServices.loadProgress(user.uid);
           if (cloudData) {
-              // Hợp nhất dữ liệu cloud với dữ liệu local (Cloud ưu tiên hơn)
-              this.stats = { ...this.stats, ...cloudData };
-              console.log("📥 Đã tải dữ liệu đồng bộ:", this.stats);
-              this.saveStats(); // Lưu lại vào local máy này luôn
+            // Hợp nhất dữ liệu cloud với dữ liệu local (Cloud ưu tiên hơn)
+            this.stats = { ...this.stats, ...cloudData };
+            console.log("📥 Đã tải dữ liệu đồng bộ:", this.stats);
+            this.saveStats(); // Lưu lại vào local máy này luôn
           }
           this.renderDashboard(); // Render lại để hiện Avatar thật
           this.updateSidebarInfo(); // Cập nhật Sidebar
@@ -585,6 +585,70 @@ class LearningApp {
   }
   closeToothlessMeme() {
     document.getElementById("meme-overlay").classList.remove("active");
+  }
+
+  // --- FEATURE: LEADERBOARD ---
+  async showLeaderboard() {
+    const modal = document.getElementById("leaderboard-modal");
+    const listEl = document.getElementById("leaderboard-list");
+
+    // 1. Mở modal và hiện loading
+    modal.classList.add("active");
+    listEl.innerHTML =
+      '<div style="text-align:center; padding:20px"><i class="fas fa-spinner fa-spin"></i> Đang tải cao thủ...</div>';
+
+    // 2. Lấy dữ liệu
+    if (!window.authServices) {
+      listEl.innerHTML =
+        '<p style="text-align:center">Vui lòng đăng nhập để xem BXH.</p>';
+      return;
+    }
+    const data = await window.authServices.getLeaderboard();
+
+    // 3. Render HTML
+    if (data.length === 0) {
+      listEl.innerHTML =
+        '<p style="text-align:center">Chưa có dữ liệu đua top.</p>';
+    } else {
+      listEl.innerHTML = data
+        .map((u, index) => {
+          let rankClass = "rank-normal";
+          let icon = `<span class="rank-num">${index + 1}</span>`;
+
+          if (index === 0) {
+            rankClass = "rank-1";
+            icon = "🥇";
+          }
+          if (index === 1) {
+            rankClass = "rank-2";
+            icon = "🥈";
+          }
+          if (index === 2) {
+            rankClass = "rank-3";
+            icon = "🥉";
+          }
+
+          // Fallback nếu không có avatar
+          const avatarImg = u.photo
+            ? `<img src="${u.photo}" class="lb-avatar">`
+            : `<div class="lb-avatar-placeholder"><i class="fas fa-user"></i></div>`;
+
+          return `
+                <div class="lb-item ${rankClass}">
+                    <div class="lb-left">
+                        <div class="lb-rank">${icon}</div>
+                        ${avatarImg}
+                        <div class="lb-info">
+                            <span class="lb-name">${u.name}</span>
+                            <span class="lb-streak">🔥 ${u.streak} ngày</span>
+                        </div>
+                    </div>
+                    <div class="lb-xp">${u.xp} XP</div>
+                </div>
+            `;
+        })
+        .join("");
+    }
   }
 }
 
