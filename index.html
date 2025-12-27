@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
+    <title>MindPath Flow - Master Your Knowledge</title>
+
+    <link rel="stylesheet" href="style.css" />
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
+  </head>
+  <body>
+    <div id="living-bg">
+      <div class="bg-layer blob-1"></div>
+      <div class="bg-layer blob-2"></div>
+      <div class="bg-layer blob-3"></div>
+      <div class="noise-overlay"></div>
+    </div>
+
+    <nav class="navbar">
+      <button
+        id="menu-toggle"
+        class="nav-btn"
+        onclick="app.toggleSidebar()"
+        aria-label="Menu"
+      >
+        <i class="fas fa-bars"></i>
+      </button>
+
+      <div class="logo" onclick="app.navigate('landing')">MindPath Flow</div>
+
+      <div class="nav-links">
+        <button
+          id="theme-toggle"
+          class="nav-btn theme-toggle-btn"
+          aria-label="Toggle Dark Mode"
+        >
+          <i class="fas fa-moon"></i>
+        </button>
+        <button
+          id="dashboard-btn"
+          class="nav-btn"
+          style="display: none"
+          onclick="app.navigate('dashboard')"
+        >
+          <i class="fas fa-columns"></i>
+        </button>
+      </div>
+
+      <div id="sidebar-overlay" onclick="app.toggleSidebar()"></div>
+      <div id="app-sidebar" class="glass-sidebar">
+        <div class="sidebar-header">
+          <div class="user-avatar"><i class="fas fa-user-astronaut"></i></div>
+          <div class="user-info">
+            <h3 id="sidebar-rank">Học viên</h3>
+            <span id="sidebar-xp" class="xp-badge">0 XP</span>
+          </div>
+          <button class="close-btn" onclick="app.toggleSidebar()">
+            <i class="fas fa-times"></i>
+          </button>
+        </div>
+
+        <ul class="sidebar-menu">
+          <li onclick="app.navigate('landing'); app.toggleSidebar()">
+            <i class="fas fa-home"></i> Trang chủ
+          </li>
+          <li onclick="app.navigate('dashboard'); app.toggleSidebar()">
+            <i class="fas fa-columns"></i> Dashboard
+          </li>
+          <li onclick="app.showLeaderboard(); app.toggleSidebar()">
+            <i class="fas fa-trophy"></i> Bảng xếp hạng
+          </li>
+          <li onclick="alert('Tính năng đang phát triển!')">
+            <i class="fas fa-cog"></i> Cài đặt
+          </li>
+          <li
+            onclick="app.showToothlessMeme(); app.toggleSidebar()"
+            style="color: #2ecc71"
+          >
+            <i class="fas fa-dragon"></i> Bí mật
+          </li>
+          <button
+            class="danger-btn"
+            onclick="if(window.authServices) window.authServices.logout()"
+          >
+            <i class="fas fa-sign-out-alt"></i> Đăng xuất
+          </button>
+        </ul>
+
+        <div class="sidebar-footer">
+          <button class="danger-btn" onclick="app.resetProgress()">
+            <i class="fas fa-trash-alt"></i> Reset Tiến độ
+          </button>
+        </div>
+      </div>
+    </nav>
+
+    <div id="app-container">
+      <section id="view-landing" class="view-section">
+        <div class="glass-card hero-card">
+          <h1>
+            Học nhanh. Nhớ lâu.<br />Chỉ
+            <span class="highlight">5 phút</span> mỗi ngày.
+          </h1>
+          <p>
+            Hệ thống trắc nghiệm thông minh sử dụng Spaced Repetition giúp bạn
+            chinh phục kiến thức dễ dàng.
+          </p>
+          <button class="hero-btn" onclick="app.enterApp()">
+            🚀 Bắt đầu ngay
+          </button>
+
+          <div class="feature-grid">
+            <div class="feature-item">
+              <i class="fas fa-bolt"></i> <span>Tốc độ</span>
+            </div>
+            <div class="feature-item">
+              <i class="fas fa-brain"></i> <span>Thông minh</span>
+            </div>
+            <div class="feature-item">
+              <i class="fas fa-chart-line"></i> <span>Tiến độ</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-dashboard" class="view-section" style="display: none">
+        <div id="dashboard-header"></div>
+        <div id="mistake-alert" style="display: none"></div>
+        <h3
+          style="
+            margin: 30px 0 20px;
+            font-size: 1.2rem;
+            opacity: 0.8;
+            font-weight: 700;
+          "
+        >
+          Khám phá lộ trình
+        </h3>
+        <div id="path-container" class="course-grid"></div>
+      </section>
+
+      <section id="view-quiz" class="view-section" style="display: none">
+        <div class="glass-card">
+          <div class="quiz-header">
+            <button class="back-btn" onclick="app.navigate('dashboard')">
+              <i class="fas fa-arrow-left"></i>
+            </button>
+            <div class="progress-container"><div id="progress-glow"></div></div>
+            <div class="timer-badge" id="timer">15s</div>
+          </div>
+
+          <div id="question-scene">
+            <h2 id="question-text">Loading...</h2>
+            <div id="options-grid" class="options-grid"></div>
+
+            <div id="feedback-area" style="display: none">
+              <div id="micro-hint"></div>
+              <button id="next-btn" class="hero-btn" onclick="app.nextStep()">
+                Tiếp theo ➝
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-result" class="view-section" style="display: none">
+        <div class="glass-card" id="result-content"></div>
+      </section>
+    </div>
+
+    <div
+      id="meme-overlay"
+      class="meme-overlay"
+      onclick="app.closeToothlessMeme()"
+    >
+      <div class="meme-content" onclick="event.stopPropagation()">
+        <button class="meme-close-btn" onclick="app.closeToothlessMeme()">
+          <i class="fas fa-times"></i>
+        </button>
+        <div
+          class="tenor-gif-embed"
+          data-postid="11433961287128453607"
+          data-share-method="host"
+          data-width="100%"
+        ></div>
+        <script
+          type="text/javascript"
+          async
+          src="https://tenor.com/embed.js"
+        ></script>
+        <audio id="meme-audio" loop>
+          <source
+            src="https://ia801602.us.archive.org/11/items/driftveil-city-music/Driftveil%20City%20Music.mp3"
+            type="audio/mp3"
+          />
+        </audio>
+      </div>
+    </div>
+
+    <div id="mode-modal" class="meme-overlay">
+      <div
+        class="glass-card"
+        style="
+          width: 90%;
+          max-width: 500px;
+          text-align: center;
+          position: relative;
+        "
+      >
+        <button
+          class="meme-close-btn"
+          onclick="document.getElementById('mode-modal').classList.remove('active')"
+        >
+          <i class="fas fa-times"></i>
+        </button>
+        <h2 style="margin-bottom: 20px">🧠 Chọn Chế Độ</h2>
+        <div class="mode-grid" style="display: grid; gap: 15px">
+          <button
+            class="mode-option-btn"
+            onclick="app.confirmStartQuiz('normal')"
+          >
+            <div class="icon">🌱</div>
+            <div class="text">
+              <strong>Normal</strong><span>15s/câu, cân bằng</span>
+            </div>
+          </button>
+          <button
+            class="mode-option-btn"
+            onclick="app.confirmStartQuiz('speed')"
+          >
+            <div class="icon">⚡</div>
+            <div class="text">
+              <strong>Speed</strong><span>5s/câu, x2 XP</span>
+            </div>
+          </button>
+          <button
+            class="mode-option-btn"
+            onclick="app.confirmStartQuiz('recall')"
+          >
+            <div class="icon">🔁</div>
+            <div class="text">
+              <strong>Recall</strong><span>Ôn tập thông minh (SRS)</span>
+            </div>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="leaderboard-modal" class="meme-overlay">
+      <div
+        class="glass-card"
+        style="width: 95%; max-width: 450px; padding: 25px; position: relative"
+      >
+        <button
+          class="meme-close-btn"
+          onclick="document.getElementById('leaderboard-modal').classList.remove('active')"
+        >
+          <i class="fas fa-times"></i>
+        </button>
+
+        <h2
+          style="
+            text-align: center;
+            margin-bottom: 20px;
+            color: #ffd700;
+            text-shadow: 0 2px 10px rgba(255, 215, 0, 0.3);
+          "
+        >
+          🏆 Bảng Vàng
+        </h2>
+
+        <div id="leaderboard-list" class="leaderboard-list">
+          <div style="text-align: center">Đang tải dữ liệu...</div>
+        </div>
+      </div>
+    </div>
+
+    <script type="module">
+      import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+      // 1. Chỉ lấy các hàm xác thực từ firebase-auth
+      import {
+        getAuth,
+        GoogleAuthProvider,
+        signInWithPopup,
+        signOut,
+        onAuthStateChanged,
+      } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+      // 2. Chuyển collection, query... xuống firebase-firestore
+      import {
+        getFirestore,
+        doc,
+        getDoc,
+        setDoc,
+        collection, // <-- Chuyển xuống đây
+        query, // <-- Chuyển xuống đây
+        orderBy, // <-- Chuyển xuống đây
+        limit, // <-- Chuyển xuống đây
+        getDocs, // <-- Chuyển xuống đây
+      } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+      // Dán config bạn vừa copy ở Bước 2 vào đây
+      const firebaseConfig = {
+        apiKey: "AIzaSyDtVbe9cWrnHpDlwQwe291KA33CcZ3F6EA",
+        authDomain: "mindpath-flow.firebaseapp.com",
+        projectId: "mindpath-flow",
+        storageBucket: "mindpath-flow.firebasestorage.app",
+        messagingSenderId: "573423995524",
+        appId: "1:573423995524:web:f1e6b0ff534ee70e7dd0d1",
+      };
+
+      // Khởi tạo Firebase
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
+      const db = getFirestore(app);
+      const provider = new GoogleAuthProvider();
+
+      // Đưa các hàm Auth ra phạm vi toàn cục (window) để main.js gọi được
+      window.authServices = {
+        login: () => {
+          signInWithPopup(auth, provider)
+            .then((result) => {
+              console.log("Logged in:", result.user);
+              // Sau khi login, main.js sẽ tự bắt sự kiện qua onAuthStateChanged
+              alert(`Chào mừng ${result.user.displayName}!`);
+            })
+            .catch((error) => console.error("Login failed", error));
+        },
+        logout: () => {
+          signOut(auth).then(() => {
+            alert("Đã đăng xuất!");
+            location.reload(); // Refresh để xóa state cũ
+          });
+        },
+        // Lắng nghe trạng thái đăng nhập
+        monitorAuth: (callback) => {
+          onAuthStateChanged(auth, callback);
+        },
+        // 4. Lưu dữ liệu lên mây (Save)
+        saveProgress: async (uid, data) => {
+          try {
+            // Chỉ lưu những thông tin quan trọng
+            const payload = {
+              xp: data.xp,
+              streak: data.streak,
+              questionStats: data.questionStats || {},
+              lastLogin: new Date().toISOString(),
+              name: window.authServices.currentUser?.displayName || "User",
+              photo: window.authServices.currentUser?.photoURL || "",
+            };
+            // Ghi đè/Cập nhật vào collection 'users', document là uid của user
+            await setDoc(doc(db, "users", uid), payload, { merge: true });
+            console.log("✅ Đã đồng bộ lên mây!");
+          } catch (e) {
+            console.error("❌ Lỗi lưu cloud:", e);
+          }
+        },
+
+        // 5. Tải dữ liệu từ mây (Load)
+        loadProgress: async (uid) => {
+          try {
+            const docSnap = await getDoc(doc(db, "users", uid));
+            if (docSnap.exists()) {
+              return docSnap.data();
+            }
+          } catch (e) {
+            console.error("❌ Lỗi tải cloud:", e);
+          }
+          return null;
+        },
+        // 6. Lấy Bảng xếp hạng (Top 10 XP cao nhất)
+        getLeaderboard: async () => {
+          try {
+            const usersRef = collection(db, "users");
+            // Lấy 10 người có XP cao nhất giảm dần
+            const q = query(usersRef, orderBy("xp", "desc"), limit(10));
+            const querySnapshot = await getDocs(q);
+
+            const leaderboard = [];
+            querySnapshot.forEach((doc) => {
+              const data = doc.data();
+              // Chỉ lấy dữ liệu cần thiết để hiển thị
+              leaderboard.push({
+                name: data.questionStats?.name || "Ẩn danh", // Tên user (cần lưu tên vào db trước, xem lưu ý dưới)
+                xp: data.xp,
+                photo: data.photo || "", // Avatar
+                streak: data.streak,
+              });
+            });
+            return leaderboard;
+          } catch (e) {
+            console.error("Lỗi lấy BXH:", e);
+            return [];
+          }
+        },
+      };
+    </script>
+
+    <script src="question.js"></script>
+    <script src="main.js"></script>
+  </body>
+</html>
