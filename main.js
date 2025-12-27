@@ -71,6 +71,15 @@ class LearningApp {
 
     this.init();
     this.setupTheme();
+    this.gachaSystem = new GachaSystem(this);
+    this.battleSystem = new BattleSystem(this);
+    this.aiService = new AIService(this);
+    this.importSystem = new ImportSystem(this);
+    this.towerSystem = new TowerSystem(this);
+    this.questSystem = new QuestSystem(this);
+    this.guildSystem = new GuildSystem(this);
+    this.bossSystem = new BossSystem(this);
+    this.storySystem = new StorySystem(this);
   }
 
   // --- CORE: STORAGE ---
@@ -88,6 +97,16 @@ class LearningApp {
       lastLogin: null,
       questionStats: {}, // { id: { wrong: 0, correct: 0, nextReview: timestamp } }
       mistakeIds: [],
+      // NEW: Gamification
+      currency: 1000,
+      inventory: [],
+      inventory_v2: {}, // Store counts here if needed, or just use inventory array
+      team: [null, null, null], // 3 Slots
+      towerFloor: 1,
+      quests: [],
+      lastQuestDate: null,
+      guildId: null,
+      guildName: null
     };
   }
 
@@ -117,14 +136,12 @@ class LearningApp {
 
   // --- CORE: NAVIGATION ---
   init() {
-    // Check login logic (Giả lập)
-    if (this.stats.lastLogin) {
-      this.navigate("dashboard");
-    } else {
-      this.navigate("landing");
-    }
+    // FORCE LOGIN FLOW: Always start at landing if not authenticated
+    this.navigate("landing");
+    
     this.attachGlobalEvents();
-    // THÊM: Kết nối với Firebase Auth (nếu script đã load)
+    
+    // Connect to Firebase and Wait
     setTimeout(() => {
       if (window.authServices) {
         window.authServices.monitorAuth(async (user) => {
@@ -140,15 +157,18 @@ class LearningApp {
               this.stats = { ...this.stats, ...cloudData };
               this.saveStats();
             }
+            // AUTO LOGIN on Success
             this.renderDashboard();
             this.updateSidebarInfo();
+            this.navigate("dashboard"); 
           } else {
             this.userProfile = null;
-            this.renderDashboard();
+            // Force back to landing if logged out
+            this.navigate("landing");
           }
         });
       }
-    }, 1000); // Chờ 1 giây
+    }, 500); 
   }
 
   attachGlobalEvents() {
@@ -169,15 +189,19 @@ class LearningApp {
     // Toggle Dashboard Btn
     const dashBtn = document.getElementById("dashboard-btn");
     if (dashBtn)
-      dashBtn.style.display = screenName === "landing" ? "none" : "block";
+      dashBtn.style.display = (screenName === "landing" || !this.userProfile) ? "none" : "block";
 
     if (screenName === "dashboard") this.renderDashboard();
   }
 
   enterApp() {
-    this.stats.lastLogin = new Date().toISOString();
-    this.saveStats();
-    this.navigate("dashboard");
+    if (!this.userProfile) {
+        // Trigger Login
+        if (window.authServices) window.authServices.login();
+        else alert("Đang kết nối server... vui lòng thử lại sau 2s");
+    } else {
+        this.navigate("dashboard");
+    }
   }
 
   toggleSidebar() {
@@ -259,6 +283,15 @@ class LearningApp {
                     </div>
                 </div>
             </div>
+
+            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <div class="streak-pill">
+                     <i class="fas fa-fire"></i> ${this.stats.streak} Ngày
+                </div>
+                <div class="streak-pill" style="background: linear-gradient(135deg, #f1c40f, #f39c12); cursor: pointer;" onclick="app.openGacha()">
+                     <i class="fas fa-star"></i> <span id="currency-display">${this.stats.currency}</span> Coins
+                </div>
+            </div>
             
             ${
               !isLoggedIn
@@ -296,43 +329,81 @@ class LearningApp {
     // 3. Grid (Giữ nguyên)
     if (pathContainer) {
       pathContainer.innerHTML = "";
+      
+      // 1. STANDARD TOPICS
+      pathContainer.innerHTML += `<h3 style="width:100%; color:white; margin:10px 0;">📚 Chương trình chính</h3>`;
       Object.keys(this.allData).forEach((key) => {
+        if (key === 'Custom' || key === 'AI Generated') return; // Skip legacy
         const count = this.allData[key].length;
         let icon = "fa-book";
-        let colorClass = "grad-blue"; // Mặc định màu xanh dương
+        let colorClass = "grad-blue"; 
 
-        if (key.toLowerCase().includes("hci")) {
-          icon = "fa-laptop-code";
-          colorClass = "grad-purple"; // Màu Tím
-        } else if (key.toLowerCase().includes("english")) {
-          icon = "fa-language";
-          colorClass = "grad-green"; // Màu Xanh lá
-        } else if (key.toLowerCase().includes("history")) {
-          icon = "fa-landmark";
-          colorClass = "grad-orange"; // Màu Cam
-        }
+        if (key.toLowerCase().includes("hci")) { icon = "fa-laptop-code"; colorClass = "grad-purple"; } 
+        else if (key.toLowerCase().includes("english")) { icon = "fa-language"; colorClass = "grad-green"; } 
+        else if (key.toLowerCase().includes("history")) { icon = "fa-landmark"; colorClass = "grad-orange"; }
 
-        const card = document.createElement("div");
-        // Thêm colorClass vào đây
+        const card = this.createTopicCard(key, count, icon, colorClass, () => this.startQuiz(key));
+        pathContainer.appendChild(card);
+      });
+
+      // 2. MY PERSONAL TOPICS
+      if (this.stats.customQuizzes && this.stats.customQuizzes.length > 0) {
+          pathContainer.innerHTML += `<h3 style="width:100%; color:white; margin:20px 0 10px 0;">👤 Của tôi</h3>`;
+          this.stats.customQuizzes.forEach(quiz => {
+              const card = this.createTopicCard(quiz.title, quiz.questionCount, "fa-user-lock", "grad-orange", () => this.startCustomQuiz(quiz));
+              pathContainer.appendChild(card);
+          });
+      }
+
+      // 3. COMMUNITY TOPICS (Async Load)
+      setTimeout(async () => {
+          if (window.authServices) {
+              const publicQuizzes = await window.authServices.getPublicQuizzes();
+              if (publicQuizzes.length > 0) {
+                  const header = document.createElement('h3');
+                  header.style.cssText = "width:100%; color:white; margin:20px 0 10px 0;";
+                  header.innerText = "🌐 Cộng đồng";
+                  pathContainer.appendChild(header);
+
+                  publicQuizzes.forEach(quiz => {
+                       const card = this.createTopicCard(quiz.title, quiz.questions.length, "fa-globe", "grad-purple", () => this.startCustomQuiz(quiz));
+                       // Add creator info
+                       const meta = card.querySelector('.card-meta');
+                       meta.innerHTML += ` <span style="font-size:0.7rem; display:block; margin-top:5px; color:#ddd;">by ${quiz.creatorName}</span>`;
+                       pathContainer.appendChild(card);
+                  });
+              }
+          }
+      }, 100);
+    }
+  }
+
+  createTopicCard(title, count, icon, colorClass, onClick) {
+      const card = document.createElement("div");
         card.className = `course-card ${colorClass}`;
-
         card.onclick = (e) => {
           createRipple(e);
-          this.startQuiz(key);
+          onClick();
         };
 
         card.innerHTML = `
-                <div class="card-icon"><i class="fas ${icon}"></i></div>
-                <div style="margin-top:auto">
-                    <h3 style="font-size:1.3rem; margin-bottom:5px">${key.toUpperCase()}</h3>
-                    <div class="card-meta">
-                        <span><i class="fas fa-layer-group"></i> ${count} Câu</span>
-                    </div>
+            <div class="card-icon"><i class="fas ${icon}"></i></div>
+            <div style="margin-top:auto">
+                <h3 style="font-size:1.3rem; margin-bottom:5px">${title.toUpperCase()}</h3>
+                <div class="card-meta">
+                    <span><i class="fas fa-layer-group"></i> ${count} Câu</span>
                 </div>
-            `;
-        pathContainer.appendChild(card);
-      });
-    }
+            </div>
+        `;
+        return card;
+  }
+
+  startCustomQuiz(quizBundle) {
+      // Load custom questions into a temporary scope
+      this.tempCategory = quizBundle.title;
+      // Dirty hack: Inject into allData temporarily so startQuiz flow works, or handle separately
+      this.allData[quizBundle.title] = quizBundle.questions;
+      this.startQuiz(quizBundle.title);
   }
 
   // --- FEATURE: QUIZ FLOW ---
@@ -646,6 +717,131 @@ class LearningApp {
         .join("");
     }
   }
+
+  // --- FEATURE: GACHA BRIDGE ---
+  openGacha() {
+    const modal = document.getElementById('gacha-modal');
+    if(modal) modal.classList.add('active');
+  }
+
+  closeGacha() {
+    const modal = document.getElementById('gacha-modal');
+    if(modal) modal.classList.remove('active');
+    const display = document.getElementById('gacha-result-display');
+    if(display) display.innerHTML = '<div style="color: #64748b; font-style: italic;">Sẵn sàng kết nối với vũ trụ...</div>';
+  }
+
+  doGachaPull() {
+    const result = this.gachaSystem.roll();
+    if (result) {
+        // Animation placeholder
+        const display = document.getElementById('gacha-result-display');
+        display.innerHTML = '<i class="fas fa-spinner fa-spin" style="font-size: 3rem; color: #a777e3;"></i>';
+        
+        setTimeout(() => {
+            let color = '#a777e3'; // 4 star
+            if (result.rarity === 5) color = '#ffd700'; // 5 star
+            if (result.rarity === 3) color = '#64748b'; // 3 star
+
+            display.innerHTML = `
+                <div class="glass-card" style="padding: 15px; width: 100%; animation: floatUp 0.5s; background: rgba(255,255,255,0.1);">
+                    <h3 style="color: ${color}; font-size: 1.5rem; margin-bottom:5px">${result.name}</h3>
+                    <div style="color: white; margin-bottom:10px">${result.rarity}★ ${result.path}</div>
+                    <img src="${result.img}" style="width: 100px; height: 100px; border-radius: 50%; border: 4px solid ${color}; object-fit: cover; margin: 0 auto; display: block;">
+                    <p style="margin-top:10px; color:#cbd5e1; font-style:italic">"${result.desc}"</p>
+                </div>
+            `;
+            if (result.rarity >= 4 && typeof confetti === 'function') {
+                confetti({ particleCount: 150, spread: 80 });
+            }
+        }, 1200);
+    }
+  }
+
+  updateCurrencyDisplay() {
+    const el = document.getElementById('currency-display');
+    if (el) el.innerText = this.stats.currency;
+  }
+  // --- FEATURE: TEAM MANAGEMENT ---
+  openTeamModal() {
+    document.getElementById('team-modal').classList.add('active');
+    this.renderTeamSlots();
+    this.renderInventory();
+    this.currentSlotIndex = null;
+  }
+
+  renderTeamSlots() {
+    this.stats.team.forEach((charId, idx) => {
+        const el = document.getElementById(`slot-${idx}`);
+        if (!charId) {
+            el.innerHTML = '<span style="opacity:0.5">Empty<br><small>Click to Add</small></span>';
+           // el.style.border = '2px dashed rgba(255,255,255,0.3)';
+        } else {
+            const char = GACHA_POOL.find(c => c.id === charId) || { name: 'Unknown', img: '' };
+            el.innerHTML = `
+                <img src="${char.img}">
+                <div style="position:absolute; bottom:0; width:100%; background:rgba(0,0,0,0.7); font-size:0.8rem; padding:2px;">
+                    ${char.name}
+                </div>
+                <button onclick="event.stopPropagation(); app.unequipSlot(${idx})" style="position:absolute; top:5px; right:5px; background:red; border:none; color:white; border-radius:50%; width:20px; height:20px; font-size:0.7rem;">x</button>
+            `;
+        }
+        el.classList.remove('selected');
+    });
+  }
+
+  selectTeamSlot(idx) {
+    this.currentSlotIndex = idx;
+    // Highlight UI
+    document.querySelectorAll('.team-slot').forEach(e => e.classList.remove('selected'));
+    document.getElementById(`slot-${idx}`).classList.add('selected');
+  }
+
+  renderInventory() {
+      const grid = document.getElementById('inventory-grid');
+      grid.innerHTML = '';
+      
+      const uniqueInv = [...new Map(this.stats.inventory.map(item => [item.id, item])).values()]; // unique logic
+
+      uniqueInv.forEach(char => {
+          const isEquipped = this.stats.team.includes(char.id);
+          const el = document.createElement('div');
+          el.className = `inv-item ${isEquipped ? 'equipped' : ''}`;
+          el.innerHTML = `
+            <div style="color:${CHAR_ELEMENTS[char.element]?.color || 'white'}; font-size:0.8rem; font-weight:bold;">${char.element}</div>
+            <img src="${char.img}" style="border: 2px solid ${isEquipped ? 'gray' : (CHAR_ELEMENTS[char.element]?.color || 'white')}">
+            <div style="font-size:0.8rem;">${char.name}</div>
+            <div style="font-size:0.7rem; color:#cbd5e1;">Lv.1</div>
+          `;
+          el.onclick = () => this.equipChar(char.id);
+          grid.appendChild(el);
+      });
+  }
+
+  equipChar(charId) {
+      if (this.currentSlotIndex === null) {
+          alert("Chọn một ô trống ở trên trước!");
+          return;
+      }
+      
+      // Remove if equipped elsewhere
+      const existingIdx = this.stats.team.indexOf(charId);
+      if (existingIdx !== -1) this.stats.team[existingIdx] = null;
+
+      this.stats.team[this.currentSlotIndex] = charId;
+      this.saveStats();
+      this.renderTeamSlots();
+      this.renderInventory();
+  }
+
+  unequipSlot(idx) {
+      this.stats.team[idx] = null;
+      this.saveStats();
+      this.renderTeamSlots();
+      this.renderInventory();
+  }
 }
 
+// Global for easy access in console if needed
+window.LearningApp = LearningApp;
 window.app = new LearningApp(quizData);
