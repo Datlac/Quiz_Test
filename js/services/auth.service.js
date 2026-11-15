@@ -1,30 +1,57 @@
 window.QuizHub = window.QuizHub || {};
 
-// Cơ chế xác thực đăng nhập & duy trì phiên làm việc
 QuizHub.Auth = {
+    // Tài khoản & mật khẩu đăng nhập hệ thống
+    ACCOUNTS: {
+        'admin': '123456',
+        'datlac': '2026'
+    },
+
+    getStorageKey() {
+        return (window.QuizHub && QuizHub.Config && QuizHub.Config.STORAGE_KEY_AUTH)
+            || 'quizhub_auth_session_v1';
+    },
+
     getCurrentUser() {
         try {
-            const raw = localStorage.getItem(QuizHub.Config.STORAGE_KEY_AUTH);
+            const raw = localStorage.getItem(this.getStorageKey());
             return raw ? JSON.parse(raw) : null;
         } catch {
             return null;
         }
     },
 
-    login(username) {
-        const cleanName = (username || 'Học viên').trim();
+    login(username, password = '', isDemo = false) {
+        const cleanName = (username || '').trim();
+
+        if (!isDemo) {
+            const expectedPass = this.ACCOUNTS[cleanName];
+            if (!expectedPass || expectedPass !== password) {
+                if (QuizHub.App && QuizHub.App.showModal) {
+                    QuizHub.App.showModal(
+                        'Sai thông tin đăng nhập',
+                        'Tên đăng nhập hoặc mật khẩu không đúng. (Mặc định: admin / 123456)',
+                        null,
+                        false,
+                        'Thử lại'
+                    );
+                }
+                return;
+            }
+        }
+
         const displayName = cleanName.includes('@') ? cleanName.split('@')[0] : cleanName;
         const user = {
             username: cleanName,
             displayName,
             loginAt: Date.now()
         };
-        localStorage.setItem(QuizHub.Config.STORAGE_KEY_AUTH, JSON.stringify(user));
+        localStorage.setItem(this.getStorageKey(), JSON.stringify(user));
         this.applyAuthUI();
     },
 
     logout() {
-        localStorage.removeItem(QuizHub.Config.STORAGE_KEY_AUTH);
+        localStorage.removeItem(this.getStorageKey());
         this.applyAuthUI();
     },
 
@@ -36,8 +63,11 @@ QuizHub.Auth = {
         if (user) {
             loginView.classList.add('hidden');
             appShell.classList.remove('hidden');
-            document.getElementById('user-display-name').textContent = user.displayName;
-            QuizHub.App.switchView('home');
+            const nameEl = document.getElementById('user-display-name');
+            if (nameEl) nameEl.textContent = user.displayName;
+            if (QuizHub.App && QuizHub.App.switchView) {
+                QuizHub.App.switchView('home');
+            }
         } else {
             appShell.classList.add('hidden');
             loginView.classList.remove('hidden');
@@ -50,14 +80,15 @@ QuizHub.Auth = {
             form.addEventListener('submit', (e) => {
                 e.preventDefault();
                 const username = document.getElementById('login-username').value;
-                this.login(username);
+                const password = document.getElementById('login-password').value;
+                this.login(username, password, false);
             });
         }
 
         const demoBtn = document.getElementById('btn-demo-login');
         if (demoBtn) {
             demoBtn.addEventListener('click', () => {
-                this.login('Học viên QuizHub');
+                this.login('Học viên QuizHub', '', true);
             });
         }
     }
