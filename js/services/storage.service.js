@@ -1,10 +1,16 @@
 window.QuizHub = window.QuizHub || {};
 
-// Quản lý lưu trữ vĩnh viễn bằng IndexedDB (không giới hạn 5MB như localStorage) + đồng bộ Cloud tùy chọn
 QuizHub.Storage = {
     DB_NAME: 'QuizHubPermanentDB',
     DB_VERSION: 1,
     db: null,
+
+    getCloudUrl() {
+        if (window.QuizHub && QuizHub.Config && typeof QuizHub.Config.getFirebaseUrl === 'function') {
+            return QuizHub.Config.getFirebaseUrl();
+        }
+        return localStorage.getItem('quizhub_firebase_url_v1') || '';
+    },
 
     async init() {
         if (this.db) return this.db;
@@ -29,7 +35,6 @@ QuizHub.Storage = {
 
     async getAllQuizzes() {
         await this.init();
-        // Nếu có cấu hình Firebase URL, thử kéo dữ liệu mới nhất từ Cloud về
         await this.pullFromCloudIfEnabled();
 
         return new Promise((resolve, reject) => {
@@ -38,8 +43,7 @@ QuizHub.Storage = {
             const req = store.getAll();
             req.onsuccess = async () => {
                 let list = req.result || [];
-                // Nạp kho mẫu mặc định nếu lần đầu mở và chưa có cờ đã khởi tạo
-                if (list.length === 0 && !localStorage.getItem('quizhub_seeded_v1')) {
+                if (list.length === 0 && !localStorage.getItem('quizhub_seeded_v1') && QuizHub.DefaultQuiz) {
                     const def = { ...QuizHub.DefaultQuiz };
                     def.coverImage = QuizHub.Parser.generateCoverDataUrl(
                         def.title,
@@ -51,7 +55,6 @@ QuizHub.Storage = {
                     localStorage.setItem('quizhub_seeded_v1', '1');
                     list = [def];
                 }
-                // Sắp xếp mới nhất lên trước
                 list.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
                 resolve(list);
             };
@@ -94,7 +97,6 @@ QuizHub.Storage = {
         await this.deleteQuizFromCloudIfEnabled(quizId);
     },
 
-    // Tiến độ làm bài riêng biệt cho từng kho quiz
     async getProgress(quizId) {
         await this.init();
         return new Promise((resolve) => {
@@ -115,9 +117,8 @@ QuizHub.Storage = {
         });
     },
 
-    // --- ĐỒNG BỘ ĐÁM MÂY TÙY CHỌN (FIREBASE REALTIME DB REST) ---
     async pushQuizToCloudIfEnabled(quizObj) {
-        const baseUrl = QuizHub.Config.getFirebaseUrl();
+        const baseUrl = this.getCloudUrl();
         if (!baseUrl) return;
         try {
             await fetch(`${baseUrl}/quizhub_repos/${encodeURIComponent(quizObj.id)}.json`, {
@@ -131,7 +132,7 @@ QuizHub.Storage = {
     },
 
     async deleteQuizFromCloudIfEnabled(quizId) {
-        const baseUrl = QuizHub.Config.getFirebaseUrl();
+        const baseUrl = this.getCloudUrl();
         if (!baseUrl) return;
         try {
             await fetch(`${baseUrl}/quizhub_repos/${encodeURIComponent(quizId)}.json`, {
@@ -143,7 +144,7 @@ QuizHub.Storage = {
     },
 
     async pullFromCloudIfEnabled() {
-        const baseUrl = QuizHub.Config.getFirebaseUrl();
+        const baseUrl = this.getCloudUrl();
         if (!baseUrl) return;
         try {
             const res = await fetch(`${baseUrl}/quizhub_repos.json`);
@@ -161,7 +162,6 @@ QuizHub.Storage = {
         }
     },
 
-    // --- XUẤT / NHẬP FILE SAO LƯU JSON ---
     async exportBackup() {
         const quizzes = await this.getAllQuizzes();
         const blob = new Blob([JSON.stringify(quizzes, null, 2)], { type: 'application/json' });
