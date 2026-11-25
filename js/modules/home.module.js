@@ -3,36 +3,23 @@ window.QuizHub = window.QuizHub || {};
 // Quản lý Trang chủ Grid: Hiển thị các kho quiz, tìm kiếm, thêm mới từ file index & xóa
 QuizHub.Home = {
     pendingParsedQuiz: null,
-    isSaving: false,
-
-    getSafeCloudUrl() {
-        if (QuizHub.Storage && typeof QuizHub.Storage.getCloudUrl === 'function') {
-            return QuizHub.Storage.getCloudUrl();
-        }
-        if (QuizHub.Config && typeof QuizHub.Config.getFirebaseUrl === 'function') {
-            return QuizHub.Config.getFirebaseUrl();
-        }
-        return localStorage.getItem('quizhub_firebase_url_v1') || '';
-    },
 
     async renderGrid() {
+        async renderGrid(skipCloudPull = false) {
         const gridEl = document.getElementById('quiz-grid');
         if (!gridEl) return;
 
         const keyword = (document.getElementById('home-search')?.value || '').trim().toLowerCase();
-
-        const quizzes = await QuizHub.Storage.getAllQuizzes();
+        const quizzes = await QuizHub.Storage.getAllQuizzes(skipCloudPull);
         const totalQuestions = quizzes.reduce((sum, q) => sum + (q.questions?.length || 0), 0);
 
-        const totalReposEl = document.getElementById('home-total-repos');
-        const totalQsEl = document.getElementById('home-total-questions');
-        if (totalReposEl) totalReposEl.textContent = quizzes.length;
-        if (totalQsEl) totalQsEl.textContent = totalQuestions;
+        document.getElementById('home-total-repos').textContent = quizzes.length;
+        document.getElementById('home-total-questions').textContent = totalQuestions;
 
-        // Cập nhật badge trạng thái lưu trữ / đồng bộ Cloud
+        // Cập nhật badge trạng thái lưu trữ / cloud
         const syncBadge = document.getElementById('sync-status-badge');
         if (syncBadge) {
-            const hasCloud = !!this.getSafeCloudUrl();
+            const hasCloud = !!QuizHub.Config.getFirebaseUrl();
             syncBadge.innerHTML = hasCloud
                 ? '<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Cloud &amp; Local Sync'
                 : '<span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Lưu vĩnh viễn';
@@ -66,14 +53,12 @@ QuizHub.Home = {
                 totalQ,
                 quiz.createdAt || 0
             );
-            const safeTitle = QuizHub.App.escapeHtml(quiz.title);
-            const safeSubtitle = QuizHub.App.escapeHtml(quiz.subtitle || '');
 
             return `
                 <article class="quiz-card bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm hover:shadow-xl hover:border-brand-400 dark:hover:border-brand-600 flex flex-col">
                     <!-- Ảnh bìa minh họa kho Quiz -->
                     <div class="relative h-44 bg-slate-900 overflow-hidden cursor-pointer" onclick="QuizHub.Home.openQuizWorkspace('${quiz.id}')">
-                        <img src="${quiz.coverImage || fallbackCover}" onerror="this.src='${fallbackCover}'" alt="${safeTitle}" class="w-full h-full object-cover">
+                        <img src="${quiz.coverImage || fallbackCover}" onerror="this.src='${fallbackCover}'" alt="${QuizHub.App.escapeHtml(quiz.title)}" class="w-full h-full object-cover">
                         <div class="absolute top-3 left-3 flex items-center gap-1.5">
                             <span class="px-2.5 py-1 rounded-lg text-[11px] font-extrabold bg-slate-950/75 text-white backdrop-blur-sm">
                                 ${totalQ} câu hỏi
@@ -88,10 +73,10 @@ QuizHub.Home = {
                     <div class="p-5 flex-1 flex flex-col justify-between space-y-4">
                         <div class="space-y-2 cursor-pointer" onclick="QuizHub.Home.openQuizWorkspace('${quiz.id}')">
                             <h3 class="text-base font-extrabold text-slate-900 dark:text-white line-clamp-2 hover:text-brand-600 dark:hover:text-brand-400 transition-colors">
-                                ${safeTitle}
+                                ${QuizHub.App.escapeHtml(quiz.title)}
                             </h3>
                             <p class="text-xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed">
-                                ${safeSubtitle}
+                                ${QuizHub.App.escapeHtml(quiz.subtitle || '')}
                             </p>
                         </div>
 
@@ -112,7 +97,7 @@ QuizHub.Home = {
                                 <button type="button" onclick="QuizHub.Home.openQuizWorkspace('${quiz.id}')" class="flex-1 py-2.5 px-3 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs transition-colors">
                                     🚀 Vào ôn tập
                                 </button>
-                                <button type="button" data-quiz-id="${quiz.id}" data-quiz-title="${safeTitle}" onclick="QuizHub.Home.handleDeleteClick(this)" title="Xóa kho quiz này" class="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-rose-600 hover:border-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors">
+                                <button type="button" onclick="QuizHub.Home.confirmDeleteQuiz('${quiz.id}', '${QuizHub.App.escapeHtml(quiz.title)}')" title="Xóa kho quiz này" class="p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-rose-600 hover:border-rose-300 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors">
                                     🗑️
                                 </button>
                             </div>
@@ -136,15 +121,12 @@ QuizHub.Home = {
     // --- MODAL THÊM KHO QUIZ MỚI ---
     openAddQuizModal() {
         this.pendingParsedQuiz = null;
-        this.isSaving = false;
         document.getElementById('input-quiz-title').value = '';
         document.getElementById('input-quiz-cover').value = '';
         document.getElementById('input-quiz-raw').value = '';
         document.getElementById('parse-preview-box').innerHTML =
             'Chưa có dữ liệu. Hãy dán mã nguồn file quiz vào ô phía trên để hệ thống kiểm tra cấu trúc.';
-        const saveBtn = document.getElementById('btn-confirm-add-quiz');
-        saveBtn.disabled = true;
-        saveBtn.textContent = '💾 Lưu & Đồng bộ vĩnh viễn';
+        document.getElementById('btn-confirm-add-quiz').disabled = true;
         document.getElementById('modal-add-quiz').classList.remove('hidden');
     },
 
@@ -187,31 +169,13 @@ QuizHub.Home = {
     },
 
     async submitNewQuiz() {
-        if (this.isSaving) return;
+        // Cập nhật lại title/cover nếu người dùng vừa sửa sau khi dán
         this.previewParsedQuiz();
         if (!this.pendingParsedQuiz) return;
 
-        const saveBtn = document.getElementById('btn-confirm-add-quiz');
-        this.isSaving = true;
-        saveBtn.disabled = true;
-        saveBtn.textContent = '⏳ Đang lưu...';
-
-        try {
-            await QuizHub.Storage.saveQuiz(this.pendingParsedQuiz);
-            this.closeAddQuizModal();
-            await this.renderGrid();
-        } catch (err) {
-            QuizHub.App.showModal('Lỗi lưu kho Quiz', err.message || 'Không thể lưu dữ liệu.', null, false, 'Đóng');
-        } finally {
-            this.isSaving = false;
-            saveBtn.textContent = '💾 Lưu & Đồng bộ vĩnh viễn';
-        }
-    },
-
-    handleDeleteClick(btnEl) {
-        const quizId = btnEl.dataset.quizId;
-        const quizTitle = btnEl.dataset.quizTitle || 'kho quiz này';
-        this.confirmDeleteQuiz(quizId, quizTitle);
+        await QuizHub.Storage.saveQuiz(this.pendingParsedQuiz);
+        this.closeAddQuizModal();
+        await this.renderGrid();
     },
 
     confirmDeleteQuiz(quizId, quizTitle) {
@@ -229,7 +193,7 @@ QuizHub.Home = {
 
     // --- MODAL CẤU HÌNH CLOUD SYNC ---
     openSyncModal() {
-        document.getElementById('input-firebase-url').value = this.getSafeCloudUrl();
+        document.getElementById('input-firebase-url').value = QuizHub.Config.getFirebaseUrl();
         document.getElementById('modal-sync').classList.remove('hidden');
     },
 
@@ -247,6 +211,7 @@ QuizHub.Home = {
             localStorage.removeItem('quizhub_firebase_url_v1');
         }
         this.closeSyncModal();
-        await this.renderGrid();
+        QuizHub.Storage.startRealtimeSync(() => this.renderGrid(true));
+        await this.renderGrid(false);
     }
 };

@@ -7,14 +7,9 @@ QuizHub.App = {
         darkMode: false
     },
 
-    getPrefsKey() {
-        return (window.QuizHub && QuizHub.Config && QuizHub.Config.STORAGE_KEY_PREFS)
-            || 'quizhub_user_prefs_v1';
-    },
-
     loadPrefs() {
         try {
-            const raw = localStorage.getItem(this.getPrefsKey());
+            const raw = localStorage.getItem(QuizHub.Config.STORAGE_KEY_PREFS);
             if (raw) Object.assign(this.prefs, JSON.parse(raw));
         } catch {}
         this.applyTheme();
@@ -22,7 +17,7 @@ QuizHub.App = {
     },
 
     savePrefs() {
-        localStorage.setItem(this.getPrefsKey(), JSON.stringify(this.prefs));
+        localStorage.setItem(QuizHub.Config.STORAGE_KEY_PREFS, JSON.stringify(this.prefs));
     },
 
     applyTheme() {
@@ -158,6 +153,13 @@ QuizHub.App = {
         this.bindKeyboardShortcuts();
         QuizHub.Auth.bindEvents();
         QuizHub.Auth.applyAuthUI();
+
+QuizHub.Storage.startRealtimeSync(() => {
+            const homeView = document.getElementById('view-home');
+            if (homeView && !homeView.classList.contains('hidden')) {
+                QuizHub.Home.renderGrid(true);
+            }
+        });
     }
 };
 
