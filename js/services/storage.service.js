@@ -263,7 +263,9 @@ QuizHub.Storage = {
             const arr = JSON.parse(text);
             if (!Array.isArray(arr)) throw new Error('File backup không hợp lệ.');
             for (const q of arr) {
-                if (q && q.id && Array.isArray(q.questions)) {
+                const isQuiz = q && q.id && Array.isArray(q.questions);
+                const isHtml = q && q.id && q.itemType === 'html' && typeof q.htmlContent === 'string';
+                if (isQuiz || isHtml) {
                     await this.saveQuiz(q);
                 }
             }
