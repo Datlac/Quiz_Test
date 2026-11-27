@@ -76,7 +76,13 @@ QuizHub.App = {
             QuizHub.Quiz.session.active = false;
         }
 
-        ['home', 'quiz-dash', 'quiz', 'result', 'notes'].forEach(v => {
+        // Giải phóng iframe khi rời màn hình xem HTML
+        if (viewName !== 'html-viewer') {
+            const frame = document.getElementById('html-viewer-frame');
+            if (frame) frame.srcdoc = '';
+        }
+
+        ['home', 'quiz-dash', 'quiz', 'result', 'notes', 'html-viewer'].forEach(v => {
             const el = document.getElementById(`view-${v}`);
             if (el) el.classList.add('hidden');
         });
@@ -84,18 +90,17 @@ QuizHub.App = {
         const target = document.getElementById(`view-${viewName}`);
         if (target) target.classList.remove('hidden');
 
-        // Ẩn/hiện sub-nav khi ở trong một kho quiz vs ở Trang chủ Grid
+        // Chỉ hiện sub-nav Luyện đề/Sổ tay khi đang ở trong kho Quiz
         const subnav = document.getElementById('quiz-subnav');
-        if (viewName === 'home') {
+        if (viewName === 'home' || viewName === 'html-viewer') {
             subnav.classList.add('hidden');
             subnav.classList.remove('flex');
-            QuizHub.Home.renderGrid();
+            if (viewName === 'home') QuizHub.Home.renderGrid(false);
         } else {
             subnav.classList.remove('hidden');
             subnav.classList.add('flex');
         }
 
-        // Cập nhật trạng thái active trên thanh điều hướng
         document.querySelectorAll('.nav-tab').forEach(btn => {
             btn.className = 'nav-tab px-3 py-2 rounded-xl text-xs sm:text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors';
         });
