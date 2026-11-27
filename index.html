@@ -150,25 +150,41 @@
                         </div>
                     </div>
 
-                    <div class="flex flex-wrap items-center gap-3 shrink-0">
-                        <button type="button" onclick="QuizHub.Home.openAddQuizModal()" class="px-5 py-3.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm shadow-lg shadow-brand-600/25 active:scale-[0.99] transition-all flex items-center gap-2">
-                            <span class="text-lg leading-none">+</span>
-                            <span>Thêm Quiz mới (Dán Index)</span>
-                        </button>
-                    </div>
+                   <div class="flex flex-wrap items-center gap-3 shrink-0">
+    <button type="button" onclick="QuizHub.Home.openAddQuizModal()" class="px-5 py-3.5 rounded-xl bg-brand-600 hover:bg-brand-700 text-white font-bold text-sm shadow-lg shadow-brand-600/25 active:scale-[0.99] transition-all flex items-center gap-2">
+        <span class="text-lg leading-none">+</span>
+        <span>Thêm Quiz mới (Dán Index)</span>
+    </button>
+    <button type="button" onclick="QuizHub.Home.openAddHtmlModal()" class="px-5 py-3.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-sm shadow-lg shadow-emerald-600/25 active:scale-[0.99] transition-all flex items-center gap-2">
+        <span>🌐</span>
+        <span>Thêm trang HTML</span>
+    </button>
+</div>
                 </div>
 
-                <!-- Thanh tìm kiếm kho quiz -->
-                <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-                    <div class="relative flex-1 max-w-md">
-                        <input type="text" id="home-search" oninput="QuizHub.Home.renderGrid()" placeholder="🔍 Tìm kiếm kho quiz theo tên môn học..." class="w-full px-4 py-2.5 rounded-xl text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500">
-                    </div>
-                    <div class="flex items-center gap-2">
-                        <button type="button" onclick="QuizHub.Storage.exportBackup()" class="px-3.5 py-2 rounded-xl text-xs font-semibold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                            ⬇️ Xuất sao lưu (.json)
-                        </button>
-                    </div>
-                </div>
+                <!-- Bộ lọc tách riêng Quiz & HTML + Thanh tìm kiếm -->
+<div class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+    <div class="inline-flex p-1 rounded-xl bg-slate-200/70 dark:bg-slate-800/80 self-start">
+        <button type="button" onclick="QuizHub.Home.setFilter('quiz')" data-home-filter="quiz" class="home-filter-btn px-3.5 py-2 rounded-lg text-xs font-bold bg-white dark:bg-slate-900 text-brand-600 dark:text-brand-400 shadow-sm transition-all">
+            📝 Kho Quiz (<span id="count-tab-quiz">0</span>)
+        </button>
+        <button type="button" onclick="QuizHub.Home.setFilter('html')" data-home-filter="html" class="home-filter-btn px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 transition-all">
+            🌐 Trang HTML (<span id="count-tab-html">0</span>)
+        </button>
+        <button type="button" onclick="QuizHub.Home.setFilter('all')" data-home-filter="all" class="home-filter-btn px-3.5 py-2 rounded-lg text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-slate-900 transition-all">
+            📚 Tất cả (<span id="count-tab-all">0</span>)
+        </button>
+    </div>
+
+    <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-1 md:justify-end">
+        <div class="relative flex-1 max-w-sm">
+            <input type="text" id="home-search" oninput="QuizHub.Home.renderGrid(true)" placeholder="🔍 Tìm kiếm theo tiêu đề..." class="w-full px-4 py-2.5 rounded-xl text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500">
+        </div>
+        <button type="button" onclick="QuizHub.Storage.exportBackup()" class="px-3.5 py-2.5 rounded-xl text-xs font-semibold bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors shrink-0">
+            ⬇️ Xuất sao lưu (.json)
+        </button>
+    </div>
+</div>
 
                 <!-- LƯỚI HIỂN THỊ CÁC KHO QUIZ (GRID) -->
                 <div id="quiz-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -482,6 +498,32 @@
                 <div id="notes-container" class="grid grid-cols-1 lg:grid-cols-2 gap-5"></div>
             </section>
 
+<!-- ==================== VIEW 5: TRÌNH CHẠY TRANG HTML ĐỘC LẬP ==================== -->
+<section id="view-html-viewer" class="hidden space-y-4 animate-enter">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 flex flex-wrap items-center justify-between gap-3 shadow-sm">
+        <div class="flex items-center gap-3">
+            <button type="button" onclick="QuizHub.App.switchView('home')" class="px-3.5 py-2 rounded-xl text-xs sm:text-sm font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 transition-colors">
+                ← Về Dashboard
+            </button>
+            <h2 id="html-viewer-title" class="text-sm sm:text-base font-extrabold text-slate-900 dark:text-white line-clamp-1">
+                Trang HTML
+            </h2>
+        </div>
+        <div class="flex items-center gap-2">
+            <button type="button" onclick="QuizHub.Home.reloadActiveHtml()" class="px-3 py-2 rounded-xl text-xs font-semibold border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800">
+                🔄 Tải lại
+            </button>
+            <button type="button" onclick="QuizHub.Home.openActiveHtmlInNewTab()" class="px-3.5 py-2 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white">
+                ↗️ Mở tab mới
+            </button>
+        </div>
+    </div>
+
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+        <iframe id="html-viewer-frame" class="w-full h-[80vh] border-0 bg-white" sandbox="allow-scripts allow-same-origin allow-forms allow-modals allow-popups"></iframe>
+    </div>
+</section>
+            
         </main>
 
         <footer class="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-5 mt-12">
@@ -535,6 +577,52 @@
         </div>
     </div>
 
+    <!-- ==================== MODAL THÊM TRANG HTML MỚI ==================== -->
+<div id="modal-add-html" class="hidden fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 max-w-2xl w-full p-6 sm:p-7 shadow-2xl space-y-5 animate-enter max-h-[92vh] overflow-y-auto">
+        <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-3">
+            <h3 class="text-lg font-extrabold text-slate-900 dark:text-white">🌐 Thêm Trang HTML Độc Lập</h3>
+            <button type="button" onclick="QuizHub.Home.closeAddHtmlModal()" class="text-slate-400 hover:text-slate-700 dark:hover:text-white text-xl font-bold">&times;</button>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div class="space-y-1">
+                <label class="block text-xs font-bold text-slate-600 dark:text-slate-400">Tên trang (Tự lấy từ thẻ &lt;title&gt; nếu để trống)</label>
+                <input type="text" id="input-html-title" placeholder="VD: Sổ tay ôn thi Android" class="w-full px-3.5 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            </div>
+            <div class="space-y-1">
+                <label class="block text-xs font-bold text-slate-600 dark:text-slate-400">Link ảnh bìa (Tùy chọn)</label>
+                <input type="url" id="input-html-cover" placeholder="https://example.com/cover.png" class="w-full px-3.5 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            </div>
+        </div>
+
+        <div class="space-y-1">
+            <label class="block text-xs font-bold text-slate-600 dark:text-slate-400">Mô tả ngắn (Tùy chọn)</label>
+            <input type="text" id="input-html-desc" placeholder="VD: File HTML tự tạo, flashcard, tài liệu tương tác..." class="w-full px-3.5 py-2.5 rounded-xl text-sm bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+        </div>
+
+        <div class="space-y-1.5">
+            <div class="flex items-center justify-between gap-2">
+                <label class="block text-xs font-bold text-slate-600 dark:text-slate-400">Dán mã nguồn HTML hoặc tải file .html</label>
+                <label class="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 cursor-pointer">
+                    📂 Chọn file .html
+                    <input type="file" accept=".html,.htm" class="hidden" onchange="QuizHub.Home.handleHtmlFileUpload(event)">
+                </label>
+            </div>
+            <textarea id="input-html-raw" rows="9" placeholder="<!DOCTYPE html>..." class="w-full p-3.5 rounded-xl text-xs font-mono bg-slate-950 text-emerald-300 border border-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"></textarea>
+        </div>
+
+        <div class="flex items-center justify-end gap-3 pt-2">
+            <button type="button" onclick="QuizHub.Home.closeAddHtmlModal()" class="px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800">
+                Hủy
+            </button>
+            <button type="button" id="btn-confirm-add-html" onclick="QuizHub.Home.submitNewHtml()" class="px-5 py-2.5 rounded-xl text-sm font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-md transition-all">
+                💾 Lưu trang HTML
+            </button>
+        </div>
+    </div>
+</div>
+    
     <!-- ==================== MODAL ĐỒNG BỘ CLOUD & SAO LƯU ==================== -->
     <div id="modal-sync" class="hidden fixed inset-0 z-50 bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4">
         <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 max-w-lg w-full p-6 shadow-2xl space-y-4 animate-enter">
