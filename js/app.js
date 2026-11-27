@@ -158,6 +158,13 @@ QuizHub.App = {
         this.bindKeyboardShortcuts();
         QuizHub.Auth.bindEvents();
         QuizHub.Auth.applyAuthUI();
+
+QuizHub.Storage.startRealtimeSync(() => {
+            const homeView = document.getElementById('view-home');
+            if (homeView && !homeView.classList.contains('hidden')) {
+                QuizHub.Home.renderGrid(true);
+            }
+        });
     }
 };
 

@@ -15,13 +15,12 @@ QuizHub.Home = {
         return localStorage.getItem('quizhub_firebase_url_v1') || '';
     },
 
-    async renderGrid() {
+    async renderGrid(skipCloudPull = false) {
         const gridEl = document.getElementById('quiz-grid');
         if (!gridEl) return;
 
         const keyword = (document.getElementById('home-search')?.value || '').trim().toLowerCase();
-
-        const quizzes = await QuizHub.Storage.getAllQuizzes();
+        const quizzes = await QuizHub.Storage.getAllQuizzes(skipCloudPull);
         const totalQuestions = quizzes.reduce((sum, q) => sum + (q.questions?.length || 0), 0);
 
         const totalReposEl = document.getElementById('home-total-repos');
@@ -247,6 +246,7 @@ QuizHub.Home = {
             localStorage.removeItem('quizhub_firebase_url_v1');
         }
         this.closeSyncModal();
-        await this.renderGrid();
+        QuizHub.Storage.startRealtimeSync(() => this.renderGrid(true));
+        await this.renderGrid(false);
     }
 };
